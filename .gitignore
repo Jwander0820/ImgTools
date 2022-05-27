@@ -168,10 +168,11 @@ dmypy.json
 
 *.pdf
 *.zip
-
-## except to ignore
-
 /.idea
 /data
 /merge_img_test
+
+## except to ignore
+!/read_img_exif/*.tif
+
 
