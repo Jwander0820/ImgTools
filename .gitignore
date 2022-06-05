@@ -174,5 +174,6 @@ dmypy.json
 
 ## except to ignore
 !/read_img_exif/*.tif
+!/gif_tools/*
 
 

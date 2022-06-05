@@ -11,3 +11,8 @@
 3. exifread_ifds : 透過直接開啟檔案，使用**exifread**提取出exif資訊，讀取多幀tif推薦使用
 4. !image.save使用tiffinfo改寫tif tag的方法
 5. !使用tifftools改寫tif tag的方法 (謹慎使用)
+
+### 將gif轉換成mp4，mp4轉換成gif
+1. convert_mp4_to_gif : 透過PIL將mp4逐幀儲存，在儲存成gif檔案
+2. mp4_to_gif2 : 透過moviepy，直接將mp4轉換成gif
+3. gif_to_mp4 : 透過moviepy，直接將gif轉換成mp4
