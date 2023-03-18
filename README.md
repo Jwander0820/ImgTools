@@ -16,3 +16,6 @@
 1. convert_mp4_to_gif : 透過PIL將mp4逐幀儲存，在儲存成gif檔案
 2. mp4_to_gif2 : 透過moviepy，直接將mp4轉換成gif
 3. gif_to_mp4 : 透過moviepy，直接將gif轉換成mp4
+
+### 圖片簡易去背功能
+1. 提供白底圖片可以用於快速裁切出圖片並生成去背透明底圖，建議用於文字提取
