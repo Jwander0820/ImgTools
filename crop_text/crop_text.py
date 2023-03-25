@@ -3,8 +3,22 @@ import numpy as np
 import os
 from PIL import Image
 
+def process_image(image_input):
+    if isinstance(image_input, Image.Image):
+        # 如果傳入參數是PIL圖像，直接回傳圖像
+        print("Input is a PIL image.")
+        return image_input
+    elif isinstance(image_input, str):
+        # 如果傳入參數是文件路徑，開啟並回傳圖像
+        print("Input is a file path.")
+        # 打開圖像
+        image = Image.open(image_input)
+        return image
+    else:
+        raise ValueError("Invalid input. Please provide a PIL image or a file path.")
 
-def crop_text(img_path, limit_length=None, dilate_iter=10):
+
+def crop_text(img_path, limit_length=None, dilate_iter=10, save=False):
     """
     裁切圖片(白底)，並生成去背透明圖層，會根據框選出的輪廓做裁切
     使用 limit_length 可以強制指定底圖尺寸大小，若不指定，則會生成裁切的輪廓尺寸*1.2的底圖
@@ -12,11 +26,11 @@ def crop_text(img_path, limit_length=None, dilate_iter=10):
     :param img_path: 圖片路徑
     :param limit_length: 指定底圖大小
     :param dilate_iter: 膨脹係數
+    :param save: 是否儲存圖片，若不儲存圖片則顯示圖片
     :return:
     """
     # 載入圖片
-    # image = cv2.imread(img_path)
-    image = Image.open(img_path)
+    image = process_image(img_path)
     image = image.convert("RGB")
     image = np.uint8(image)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -81,6 +95,15 @@ def crop_text(img_path, limit_length=None, dilate_iter=10):
 
         transparent_image[y1:y2, x1:x2] = extracted_image_rgba
 
-        # 儲存圖片
-        filename = os.path.join('img', f'{i}.png')
-        cv2.imwrite(filename, transparent_image)
+        if save:
+            # 儲存圖片
+            filename = os.path.join('img', f'{i}.png')
+            cv2.imwrite(filename, transparent_image)
+        else:
+            tmp_img = Image.fromarray(transparent_image)
+            tmp_img.show()
+
+
+if __name__ == '__main__':
+    img_path = r"insert_img_path"
+    crop_text(img_path, dilate_iter=500)
