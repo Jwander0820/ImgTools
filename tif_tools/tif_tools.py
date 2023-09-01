@@ -66,7 +66,7 @@ class TifTools:
         if show:
             img.show()
         if save or output_path:
-            save_path = output_path or f"{path[:-4]}_page{str(page).zfill(3)}.tif"
+            save_path = output_path or f"{path[:-4]}_page{str(page + 1).zfill(3)}.tif"
             print(save_path)
             img.save(save_path, dpi=(600, 600), compression="tiff_lzw")
         return img
