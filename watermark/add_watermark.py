@@ -54,6 +54,7 @@ class AddWatermark:
         else:
             base_image.save(output_image_path, dpi=(300, 300), compression='tiff_lzw')
 
+
 if __name__ == '__main__':
     # 使用範例
     input_image_path = "../read_img_exif/test.tif"

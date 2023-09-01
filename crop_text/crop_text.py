@@ -105,5 +105,5 @@ def crop_text(img_path, limit_length=None, dilate_iter=10, save=False):
 
 
 if __name__ == '__main__':
-    img_path = r"insert_img_path"
+    img_path = r"../merge_img/2_square.tif"
     crop_text(img_path, dilate_iter=500)
