@@ -30,15 +30,19 @@ class TifTools:
 
         print(f"Multipage tif has been saved to {output_path}")
 
+    def _get_file_name(self, path):
+        file_name_with_ext = os.path.basename(path)  # 取出文件名(包含副檔名)
+        file_name, _ = os.path.splitext(file_name_with_ext)  # 去除副檔名
+        return file_name
+
     def split_all_page(self, path, folder_name="output"):
         """
         將多頁 tif 檔拆分並儲存為單頁 tif 檔
         :param path: tif檔案路徑
-        :param folder_name: 存儲資料夾名稱，如果為None則自動命名
+        :param folder_name: 存儲資料夾名稱，如果不設定則自動命名並儲存至同一層 output 資料夾下
         """
         img = Image.open(path)
-        file_name_with_ext = os.path.basename(path)  # 取出文件名(包含副檔名)
-        file_name, _ = os.path.splitext(file_name_with_ext)  # 去除副檔名
+        file_name = self._get_file_name(path)
 
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)
@@ -51,33 +55,36 @@ class TifTools:
             tmp_img.save(save_path, dpi=(600, 600), compression="tiff_lzw")
             print(save_path)
 
-    def process_single_page(self, path, page, show=False, save=False, output_path=None):
+    def process_single_page(self, path, page, show=False, save=False, output_path=""):
         """
         查看或儲存單一頁面的 tif 圖片
         :param path: tif 檔案的路徑
         :param page: 指定想要處理的頁數
         :param show: 是否要顯示該頁，預設為False
         :param save: 是否要儲存該頁，預設為False
-        :param output_path: 若儲存，儲存的路徑
+        :param output_path: 若儲存，儲存的資料夾路徑(不包含檔名)
         :return: 處理後的圖片物件
         """
+        file_name = self._get_file_name(path)
         img = Image.open(path)
         img.seek(page)
         if show:
             img.show()
         if save or output_path:
-            save_path = output_path or f"{path[:-4]}_page{str(page + 1).zfill(3)}.tif"
-            print(save_path)
+            tmp_file_name = f"{file_name}_page{str(page + 1).zfill(3)}.tif"
+            save_path = os.path.join(output_path, tmp_file_name)  # 若未指定output_path，預設儲存在同層資料夾下
             img.save(save_path, dpi=(600, 600), compression="tiff_lzw")
+            print(save_path)
         return img
 
 
 if __name__ == '__main__':
     # 將_path替換成想要拆頁的tif檔路徑執行即可
-    _path = r"./test_file.tif"
+    _path = r"D:\Database\圖像資料_保存用\金剛經六祖口訣-掃描檔\(掃描檔)金剛經六祖口訣-內文_對切.tif"
     tif_tools = TifTools()
-    # 分割出多頁tif檔案成單一tif檔案
-    tif_tools.split_all_page(_path)
 
     # 讀取或是儲存單一頁圖片
-    tif_tools.process_single_page(_path, 1, show=True)
+    tif_tools.process_single_page(_path, 1, show=True, save=True)
+
+    # 分割多頁tif檔案成單一tif檔案
+    # tif_tools.split_all_page(_path)
