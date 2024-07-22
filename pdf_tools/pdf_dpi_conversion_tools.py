@@ -146,8 +146,7 @@ def save_all_pages_as_images(processor, output_dir, dpi):
 
 def main():
     """
-    20240219；PDF指定DPI抽取圖片工具，使用PDFOperator做轉換，可簡易包裝成exe
-    應該不需要時常更新，留存供參考
+    PDF指定DPI抽取圖片工具，使用PDFOperator做轉換，可簡易包裝成exe
     壓成EXE直接使用 pyinstaller -F ./folder/XXX.py 即可
     :return:
     """

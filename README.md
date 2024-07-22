@@ -34,6 +34,11 @@
 1. add_watermark.py: 添加指定文字浮水印
 2. generate_special_text.py: 生成特殊樣式浮水印(實驗性)
 
+### PDF抽頁工具(pdf_dpi_conversion_tools.py)
+0. 使用方法為壓成EXE後在cmd中使用
+1. 快速抽取PDF指定頁，並轉換成圖片(.png)
+
+
 ### 研究相關
 1. test_cv_minarearect_logic: 透過圖片連續旋轉確認minAreaRect計算角度的邏輯
 2. test_multiple_rotated: 測試多次旋轉對圖像造成的改變與破壞
