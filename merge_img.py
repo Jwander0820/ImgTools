@@ -36,13 +36,14 @@ def merge_img_to_one_pdf(folder_path, save_file_path):
             img_path = os.path.join(folder_path, file)
             img = Image.open(img_path).convert("RGB")
             pdf_files.append(img)
-    pdf_files[0].save(save_file_path, "pdf", append_images=pdf_files[1:], save_all=True)
+    if pdf_files:
+        pdf_files[0].save(save_file_path, "pdf", append_images=pdf_files[1:], save_all=True)
     return save_file_path
 
 
 def merge_img_to_one_gif(folder_path, save_file_path, duration=1000):
     """
-    將資料夾下的所有圖片合成一張GIF，合成GIF建議圖像尺寸大小相近，否則會按照第一張圖的尺寸作貼圖
+    將資料夾下的所有圖片合成一張有透明度的GIF，合成GIF建議圖像尺寸大小相近，否則會按照第一張圖的尺寸作貼圖
     :param folder_path: 資料夾路徑
     :param save_file_path: 儲存檔案的路徑
     :param duration: 圖片間隔時長，單位為毫秒
@@ -53,10 +54,17 @@ def merge_img_to_one_gif(folder_path, save_file_path, duration=1000):
     for file in files:
         if '.tif' in file or '.png' in file or '.jpg' in file:  # 檢測若file檔名包含.tif、.png、.jpg 加入要合併的清單
             img_path = os.path.join(folder_path, file)
-            img = Image.open(img_path).convert("RGB")
+            # 轉換為 "RGBA" 模式以保留透明度資訊
+            img = Image.open(img_path).convert("RGBA")
             img = img.resize((1000, 1000))  # 若無resize成相同大小，GIF疊圖會以第一張為準，參數可以自行調整
             gif_list.append(img)
-    gif_list[0].save(save_file_path, save_all=True, append_images=gif_list[1:], loop=0, duration=duration, disposal=0)
+
+    if not gif_list:
+        return None # 如果沒有找到圖片，直接返回
+
+    # disposal=2: 告訴檢視器在繪製下一幀之前清除畫布，這對於透明GIF是必要的
+    # Pillow 會自動從 RGBA 圖像的 Alpha 通道處理透明度
+    gif_list[0].save(save_file_path, save_all=True, append_images=gif_list[1:], loop=0, duration=duration, disposal=2)
     return save_file_path
 
 

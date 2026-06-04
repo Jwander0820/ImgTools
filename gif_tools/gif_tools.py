@@ -2,7 +2,7 @@ import glob
 import os
 
 import cv2
-import moviepy.editor as mp
+import moviepy as mp
 from PIL import Image
 
 
