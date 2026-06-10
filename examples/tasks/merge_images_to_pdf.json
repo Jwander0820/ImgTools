@@ -1,0 +1,8 @@
+{
+  "action": "merge.images_to_pdf",
+  "params": {
+    "folder_path": "D:/Tools/ImgTools/tests/fixtures/merge_img",
+    "output_path": "D:/Tools/ImgTools/data/outputs/merged.pdf",
+    "overwrite": false
+  }
+}

@@ -173,7 +173,24 @@ dmypy.json
 /merge_img_test
 
 ## except to ignore
-!/read_img_exif/*.tif
-!/gif_tools/*
+!/legacy/
+!/legacy/**/*.py
+!/legacy/**/*.json
+!/legacy/**/*.gif
+!/legacy/**/*.tif
+!/legacy/**/*.mp4
+!/examples/
+!/examples/tasks/
+!/examples/tasks/*.json
+!/tests/
+!/tests/fixtures/
+!/tests/fixtures/**/*.tif
+!/imgtools/ui/static/
+!/imgtools/ui/static/.gitkeep
+!/data/
+/data/*
+!/data/outputs/
+!/data/outputs/.gitkeep
 
 
+/data/outputs/.gitkeep

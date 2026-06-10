@@ -1,0 +1,11 @@
+{
+  "action": "pdf.render_page",
+  "params": {
+    "pdf_path": "D:/Tools/ImgTools/data/sample.pdf",
+    "page": 1,
+    "dpi": 192,
+    "output_path": "D:/Tools/ImgTools/data/outputs/sample_page001.png",
+    "overwrite": false
+  }
+}
+

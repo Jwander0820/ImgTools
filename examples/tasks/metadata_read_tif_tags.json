@@ -1,0 +1,7 @@
+{
+  "action": "metadata.read_tif_tags",
+  "params": {
+    "input_path": "D:/Tools/ImgTools/legacy/read_img_exif/test.tif",
+    "method": "pil"
+  }
+}

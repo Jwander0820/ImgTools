@@ -1,0 +1,10 @@
+{
+  "action": "rename.files_replace",
+  "params": {
+    "target_folder": "D:/Tools/ImgTools/data/sample_rename",
+    "target": "old",
+    "replacement": "new",
+    "confirm": false
+  }
+}
+
