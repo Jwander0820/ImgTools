@@ -6,6 +6,14 @@ from unittest.mock import patch
 
 
 class UIServerTests(unittest.TestCase):
+    def test_index_supports_path_list_textarea(self):
+        from imgtools.ui.server import INDEX_HTML
+
+        self.assertIn("param.type === 'path_list'", INDEX_HTML)
+        self.assertIn("<textarea", INDEX_HTML)
+        self.assertIn(r"value.join('\n')", INDEX_HTML)
+        self.assertIn(r"split(/\r?\n/)", INDEX_HTML)
+
     def test_http_server_returns_tools(self):
         from imgtools.ui.server import create_server
 

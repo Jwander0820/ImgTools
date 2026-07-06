@@ -28,7 +28,7 @@ def run_tool(action: str, raw_params: dict[str, Any], *, manifest: bool = True) 
     except KeyError as exc:
         result = _error(action, "UNKNOWN_ACTION", str(exc))
     except Exception as exc:
-        result = _error(action, exc.__class__.__name__, str(exc))
+        result = _error(action, getattr(exc, "error_code", exc.__class__.__name__), str(exc))
 
     result["action"] = action
     finished_at = now_iso()
@@ -61,15 +61,21 @@ def _coerce(param: ToolParam, value: Any) -> Any:
         return value
     if param.type == "int":
         return int(value)
+    if param.type == "float":
+        return float(value)
     if param.type == "bool":
         if isinstance(value, bool):
             return value
         return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+    if param.type == "path_list":
+        if isinstance(value, (list, tuple)):
+            return [str(item).strip() for item in value if str(item).strip()]
+        return [line.strip() for line in str(value).splitlines() if line.strip()]
     return str(value)
 
 
 def _is_empty(value: Any) -> bool:
-    return value is None or value == ""
+    return value is None or value == "" or isinstance(value, (list, tuple)) and not value
 
 
 def _error(action: str, code: str, message: str) -> dict[str, Any]:

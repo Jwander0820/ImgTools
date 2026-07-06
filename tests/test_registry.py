@@ -13,12 +13,24 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("rename.folders_replace", actions)
         self.assertIn("pdf.render_page", actions)
         self.assertIn("merge.images_to_pdf", actions)
+        self.assertIn("merge.panorama_translation", actions)
 
     def test_get_tool_unknown_action_raises_error(self):
         from imgtools.service.registry import get_tool
 
         with self.assertRaises(KeyError):
             get_tool("missing.action")
+
+    def test_panorama_exposes_low_confidence_fallback(self):
+        from imgtools.service.registry import get_tool
+
+        params = {param.name: param for param in get_tool("merge.panorama_translation").params}
+
+        self.assertIn("allow_low_confidence", params)
+        self.assertTrue(params["allow_low_confidence"].default)
+        self.assertIn("crop_subtitles", params)
+        self.assertTrue(params["crop_subtitles"].default)
+        self.assertEqual(params["subtitle_crop_ratio"].default, 0.08)
 
     def test_every_tool_has_required_metadata(self):
         from imgtools.service.registry import list_tools

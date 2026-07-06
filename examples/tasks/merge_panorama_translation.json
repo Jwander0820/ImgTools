@@ -1,0 +1,15 @@
+{
+  "action": "merge.panorama_translation",
+  "params": {
+    "input_paths": [
+      "D:/input/frame_001.png",
+      "D:/input/frame_002.png",
+      "D:/input/frame_003.png"
+    ],
+    "ignore_bottom_ratio": 0.15,
+    "allow_low_confidence": true,
+    "crop_subtitles": true,
+    "subtitle_crop_ratio": 0.08,
+    "overwrite": false
+  }
+}

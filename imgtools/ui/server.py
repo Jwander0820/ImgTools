@@ -149,7 +149,7 @@ INDEX_HTML = """<!doctype html>
     form, .result { padding: 14px; }
     .meta { color: var(--muted); font-size: 13px; line-height: 1.5; }
     label { display: block; font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
-    input, select {
+    input, select, textarea {
       width: 100%;
       min-height: 36px;
       border: 1px solid var(--line);
@@ -157,6 +157,7 @@ INDEX_HTML = """<!doctype html>
       padding: 8px 10px;
       font: inherit;
     }
+    textarea { min-height: 112px; resize: vertical; }
     input[type="checkbox"] { width: auto; min-height: auto; }
     .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
     .actions { display: flex; gap: 10px; margin-top: 18px; }
@@ -250,6 +251,9 @@ INDEX_HTML = """<!doctype html>
         const value = param.default === undefined ? '' : param.default;
         if (param.type === 'bool') {
           block.innerHTML = `<label><input id="${id}" type="checkbox" ${value ? 'checked' : ''}> ${escapeHtml(param.name)}${required}</label><div class="hint">${escapeHtml(param.description || '')}</div>`;
+        } else if (param.type === 'path_list') {
+          const pathValue = Array.isArray(value) ? value.join('\\n') : value;
+          block.innerHTML = `<label for="${id}">${escapeHtml(param.name)}${required}</label><textarea id="${id}" placeholder="每行一個圖片路徑">${escapeHtml(String(pathValue))}</textarea><div class="hint">${escapeHtml(param.description || '')}</div>`;
         } else if (param.choices && param.choices.length) {
           block.innerHTML = `<label for="${id}">${escapeHtml(param.name)}${required}</label><select id="${id}">${param.choices.map(choice => `<option value="${escapeHtml(choice)}" ${choice === value ? 'selected' : ''}>${escapeHtml(choice)}</option>`).join('')}</select><div class="hint">${escapeHtml(param.description || '')}</div>`;
         } else {
@@ -271,6 +275,7 @@ INDEX_HTML = """<!doctype html>
         const el = document.getElementById(`param_${param.name}`);
         if (!el) return;
         if (param.type === 'bool') out[param.name] = el.checked;
+        else if (param.type === 'path_list') out[param.name] = el.value.split(/\\r?\\n/).map(value => value.trim()).filter(Boolean);
         else if (el.value !== '') out[param.name] = el.value;
       });
       return out;

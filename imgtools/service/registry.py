@@ -128,6 +128,50 @@ def _specs() -> list[ToolSpec]:
             ),
             handler=merge.images_to_pdf,
         ),
+        ToolSpec(
+            action="merge.panorama_translation",
+            title="動畫平移長截圖",
+            category="merge",
+            description="依指定順序偵測圖片間的純平移，合併為一張長截圖。",
+            params=(
+                ToolParam(
+                    "input_paths",
+                    "path_list",
+                    True,
+                    description="依合併順序輸入圖片路徑，每行一個",
+                ),
+                ToolParam(
+                    "ignore_bottom_ratio",
+                    "float",
+                    False,
+                    0.15,
+                    "比對時忽略底部字幕區的比例",
+                ),
+                ToolParam(
+                    "allow_low_confidence",
+                    "bool",
+                    False,
+                    True,
+                    "依檔名時間碼推算大位移並接受少量一致特徵",
+                ),
+                ToolParam(
+                    "crop_subtitles",
+                    "bool",
+                    False,
+                    True,
+                    "在重疊區於字幕前切換來源影格，只保留最底部字幕",
+                ),
+                ToolParam(
+                    "subtitle_crop_ratio",
+                    "float",
+                    False,
+                    0.08,
+                    "字幕帶高度比例，用於選擇重疊區接縫",
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=merge.panorama_translation,
+        ),
     ]
 
 
@@ -144,4 +188,3 @@ def get_tool(action: str) -> ToolSpec:
     if action not in registry:
         raise KeyError(action)
     return registry[action]
-
