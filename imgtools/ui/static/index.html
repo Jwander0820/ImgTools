@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ImgTools｜影像工作桌</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="ImgTools 首頁">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>ImgTools</strong><small>影像工作桌</small></span>
+      </a>
+      <div class="local-badge"><span></span>在此電腦執行</div>
+    </header>
+    <main class="workspace">
+      <aside class="tool-shelf" aria-label="工具目錄">
+        <div class="shelf-heading">
+          <p class="eyebrow">Tool shelf</p>
+          <div class="shelf-title"><h1>選擇工具</h1><span id="tool-count">0</span></div>
+          <label class="search-box" for="tool-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+            <input id="tool-search" type="search" placeholder="搜尋名稱或指令" autocomplete="off">
+          </label>
+          <div id="category-filters" class="category-filters" aria-label="工具分類"></div>
+        </div>
+        <nav id="tools" class="tools"></nav>
+        <div id="tools-empty" class="empty-state" hidden>找不到符合的工具。<br>換個關鍵字試試看。</div>
+      </aside>
+      <section class="workbench" aria-live="polite">
+        <div id="tool-intro" class="tool-intro">
+          <div>
+            <div class="tool-kicker"><span id="tool-category">—</span><span id="danger-badge"></span></div>
+            <h2 id="tool-title">載入工具中…</h2>
+            <p id="tool-description">正在讀取本機工具清單。</p>
+          </div>
+          <code id="tool-action">—</code>
+        </div>
+        <form id="form" class="tool-form"></form>
+      </section>
+      <aside class="output-drawer" aria-label="執行結果">
+        <div class="output-heading">
+          <div><p class="eyebrow">Output</p><h2>執行結果</h2></div>
+          <span id="status" class="status idle"><i></i>尚未執行</span>
+        </div>
+        <div id="result-summary" class="result-summary">
+          <div class="result-placeholder">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 7.5h22v17H5zM9 20l4.5-5 3.5 4 2.5-3 3.5 4M21.5 12h.01"/></svg>
+            <strong>結果會顯示在這裡</strong>
+            <span>填寫參數並執行工具後，可在此查看輸出與警告。</span>
+          </div>
+        </div>
+        <details class="raw-result">
+          <summary>查看原始 JSON</summary>
+          <pre id="result">{}</pre>
+        </details>
+      </aside>
+    </main>
+  </div>
+</body>
+</html>

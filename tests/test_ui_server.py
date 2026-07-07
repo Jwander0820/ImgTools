@@ -6,13 +6,44 @@ from unittest.mock import patch
 
 
 class UIServerTests(unittest.TestCase):
-    def test_index_supports_path_list_textarea(self):
+    def test_index_loads_separate_frontend_assets(self):
         from imgtools.ui.server import INDEX_HTML
 
-        self.assertIn("param.type === 'path_list'", INDEX_HTML)
-        self.assertIn("<textarea", INDEX_HTML)
-        self.assertIn(r"value.join('\n')", INDEX_HTML)
-        self.assertIn(r"split(/\r?\n/)", INDEX_HTML)
+        self.assertIn('/static/app.css', INDEX_HTML)
+        self.assertIn('/static/app.js', INDEX_HTML)
+        self.assertIn('id="tool-search"', INDEX_HTML)
+        self.assertIn('id="category-filters"', INDEX_HTML)
+
+    def test_frontend_script_is_schema_driven_and_supports_path_lists(self):
+        from imgtools.ui.server import STATIC_DIR
+
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+
+        self.assertIn("selected.params.forEach", script)
+        self.assertIn("param.type === 'path_list'", script)
+        self.assertIn(r"value.join('\n')", script)
+        self.assertIn(r"split(/\r?\n/)", script)
+
+    def test_http_server_returns_static_assets(self):
+        from imgtools.ui.server import create_server
+
+        server = create_server("127.0.0.1", 0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            host, port = server.server_address
+            conn = HTTPConnection(host, port, timeout=5)
+            conn.request("GET", "/static/app.css")
+            response = conn.getresponse()
+            body = response.read().decode("utf-8")
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+        self.assertEqual(response.status, 200)
+        self.assertIn("text/css", response.getheader("Content-Type"))
+        self.assertIn("--ink", body)
 
     def test_http_server_returns_tools(self):
         from imgtools.ui.server import create_server
