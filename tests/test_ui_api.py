@@ -30,7 +30,16 @@ class UIAPITests(unittest.TestCase):
         self.assertEqual(result, fake_result)
         json.dumps(result)
 
+    def test_api_pick_validates_mode_and_returns_paths(self):
+        from imgtools.ui.api import handle_pick
+
+        self.assertFalse(handle_pick({"mode": "wrong"})["ok"])
+        with patch("imgtools.ui.api.pick_paths", return_value=["D:/Images/a.png"]):
+            result = handle_pick({"mode": "file"})
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["paths"], ["D:/Images/a.png"])
+
 
 if __name__ == "__main__":
     unittest.main()
-

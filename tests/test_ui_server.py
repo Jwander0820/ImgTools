@@ -13,6 +13,7 @@ class UIServerTests(unittest.TestCase):
         self.assertIn('/static/app.js', INDEX_HTML)
         self.assertIn('id="tool-search"', INDEX_HTML)
         self.assertIn('id="category-filters"', INDEX_HTML)
+        self.assertIn('id="quick-actions"', INDEX_HTML)
 
     def test_frontend_script_is_schema_driven_and_supports_path_lists(self):
         from imgtools.ui.server import STATIC_DIR
@@ -23,6 +24,9 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("param.type === 'path_list'", script)
         self.assertIn(r"value.join('\n')", script)
         self.assertIn(r"split(/\r?\n/)", script)
+        self.assertIn("tool.featured", script)
+        self.assertIn("param.advanced", script)
+        self.assertIn("'/api/pick'", script)
 
     def test_http_server_returns_static_assets(self):
         from imgtools.ui.server import create_server
@@ -79,6 +83,29 @@ class UIServerTests(unittest.TestCase):
                 conn = HTTPConnection(host, port, timeout=5)
                 payload = json.dumps({"action": "x.y", "params": {}}).encode("utf-8")
                 conn.request("POST", "/api/run", body=payload, headers={"Content-Type": "application/json"})
+                response = conn.getresponse()
+                body = json.loads(response.read().decode("utf-8"))
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(body, fake_result)
+
+    def test_http_server_opens_local_picker(self):
+        from imgtools.ui.server import create_server
+
+        fake_result = {"ok": True, "paths": ["D:/Images"]}
+        with patch("imgtools.ui.server.handle_pick", return_value=fake_result):
+            server = create_server("127.0.0.1", 0)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                host, port = server.server_address
+                conn = HTTPConnection(host, port, timeout=5)
+                payload = json.dumps({"mode": "folder"}).encode("utf-8")
+                conn.request("POST", "/api/pick", body=payload, headers={"Content-Type": "application/json"})
                 response = conn.getresponse()
                 body = json.loads(response.read().decode("utf-8"))
             finally:

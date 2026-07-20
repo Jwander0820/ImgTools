@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from imgtools.ui.api import handle_get_tools, handle_run
+from imgtools.ui.api import handle_get_tools, handle_pick, handle_run
 
 
 STATIC_DIR = Path(__file__).with_name("static")
@@ -54,13 +54,15 @@ class ImgToolsHandler(BaseHTTPRequestHandler):
         self._send_json({"ok": False, "message": "Not found"}, status=404)
 
     def do_POST(self) -> None:
-        if self.path != "/api/run":
+        path = urlparse(self.path).path
+        if path not in {"/api/run", "/api/pick"}:
             self._send_json({"ok": False, "message": "Not found"}, status=404)
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
             payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
-            self._send_json(handle_run(payload))
+            result = handle_run(payload) if path == "/api/run" else handle_pick(payload)
+            self._send_json(result)
         except Exception as exc:
             self._send_json(
                 {

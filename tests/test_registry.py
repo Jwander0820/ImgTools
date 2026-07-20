@@ -12,8 +12,13 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("rename.files_replace", actions)
         self.assertIn("rename.folders_replace", actions)
         self.assertIn("pdf.render_page", actions)
+        self.assertIn("pdf.render_all_pages", actions)
         self.assertIn("merge.images_to_pdf", actions)
         self.assertIn("merge.panorama_translation", actions)
+        self.assertIn("tif.split_pages", actions)
+        self.assertIn("tif.extract_page", actions)
+        self.assertIn("gif.images_to_gif", actions)
+        self.assertIn("watermark.text", actions)
 
     def test_get_tool_unknown_action_raises_error(self):
         from imgtools.service.registry import get_tool
@@ -32,6 +37,19 @@ class RegistryTests(unittest.TestCase):
         self.assertTrue(params["crop_subtitles"].default)
         self.assertEqual(params["subtitle_crop_ratio"].default, 0.08)
 
+    def test_registry_exposes_quick_actions_and_progressive_fields(self):
+        from imgtools.service.registry import get_tool, list_tools
+
+        featured = {tool["action"] for tool in list_tools() if tool["featured"]}
+
+        self.assertIn("gif.images_to_gif", featured)
+        self.assertIn("merge.images_to_pdf", featured)
+        gif_params = {param["name"]: param for param in get_tool("gif.images_to_gif").to_dict()["params"]}
+        self.assertFalse(gif_params["output_path"]["required"])
+        self.assertTrue(gif_params["output_path"]["advanced"])
+        self.assertEqual(gif_params["output_path"]["default_hint"], "同資料夾的 output.gif")
+        self.assertEqual(gif_params["folder_path"]["label"], "圖片資料夾")
+
     def test_every_tool_has_required_metadata(self):
         from imgtools.service.registry import list_tools
 
@@ -42,6 +60,7 @@ class RegistryTests(unittest.TestCase):
                 self.assertTrue(tool.get("category"))
                 self.assertIsInstance(tool.get("params"), list)
                 self.assertIn(tool.get("danger_level"), {"low", "medium", "high"})
+                self.assertIsInstance(tool.get("featured"), bool)
 
     def test_metadata_pil_reader_does_not_import_optional_readers(self):
         import builtins

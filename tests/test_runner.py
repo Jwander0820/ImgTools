@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -71,20 +72,24 @@ class RunnerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
+            state_root = root / "server-state"
             (root / "old-name.txt").write_text("x", encoding="utf-8")
 
-            result = run_tool(
-                "rename.files_replace",
-                {
-                    "target_folder": str(root),
-                    "target": "old",
-                    "replacement": "new",
-                },
-            )
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": str(state_root)}):
+                result = run_tool(
+                    "rename.files_replace",
+                    {
+                        "target_folder": str(root),
+                        "target": "old",
+                        "replacement": "new",
+                    },
+                )
 
             self.assertTrue(result["ok"])
             manifest_path = Path(result["manifest_path"])
             self.assertTrue(manifest_path.exists())
+            self.assertEqual(manifest_path.parent, state_root / "manifests")
+            self.assertFalse((root / ".imgtools").exists())
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(manifest["action"], "rename.files_replace")
             self.assertTrue(manifest["ok"])
@@ -104,6 +109,23 @@ class RunnerTests(unittest.TestCase):
 
         self.assertFalse(result["ok"])
         self.assertTrue(result["error_code"])
+
+    def test_manifest_redacts_password_values(self):
+        from imgtools.service.manifest import write_manifest
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": tmp}):
+                manifest_path = write_manifest(
+                    "pdf.render_page",
+                    {"pdf_path": "input.pdf", "password": "top-secret"},
+                    {"ok": False, "outputs": {}, "warnings": []},
+                    "2026-07-20T00:00:00+08:00",
+                    "2026-07-20T00:00:01+08:00",
+                )
+
+            manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+            self.assertEqual(manifest["params"]["password"], "[REDACTED]")
+            self.assertNotIn("top-secret", Path(manifest_path).read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 from typing import Any
 
-from .common import abs_path, ensure_not_exists, ensure_parent
+from .common import abs_path, ensure_not_exists, ensure_parent, resolve_output_path
 
 
 @dataclass(frozen=True)
@@ -27,11 +27,16 @@ class InsufficientOverlapError(ValueError):
 def images_to_pdf(params: dict[str, Any]) -> dict[str, Any]:
     from legacy.merge_img import merge_img_to_one_pdf
 
-    output_path = params["output_path"]
+    folder_path = Path(str(params["folder_path"])).expanduser().resolve()
+    if not folder_path.is_dir():
+        raise NotADirectoryError(f"Input folder does not exist: {folder_path}")
     overwrite = bool(params.get("overwrite", False))
-    ensure_parent(output_path)
-    ensure_not_exists(output_path, overwrite=overwrite)
-    result = merge_img_to_one_pdf(params["folder_path"], output_path)
+    output_path = resolve_output_path(
+        params.get("output_path"),
+        folder_path / "output.pdf",
+        overwrite=overwrite,
+    )
+    result = merge_img_to_one_pdf(str(folder_path), str(output_path))
     return {
         "ok": True,
         "outputs": {"files": [abs_path(result)]},

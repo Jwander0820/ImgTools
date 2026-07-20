@@ -7,6 +7,54 @@ from typing import Any, Callable
 ToolHandler = Callable[[dict[str, Any]], dict[str, Any]]
 
 
+PARAM_LABELS = {
+    "input_path": "輸入檔案",
+    "input_paths": "輸入圖片",
+    "folder_path": "圖片資料夾",
+    "target_folder": "目標資料夾",
+    "output_path": "自訂輸出位置",
+    "output_dir": "自訂輸出資料夾",
+    "page": "頁碼",
+    "pdf_path": "PDF 檔案",
+    "dpi": "輸出解析度（DPI）",
+    "password": "PDF 密碼",
+    "method": "讀取方式",
+    "target": "尋找文字",
+    "replacement": "替換成",
+    "confirm": "套用變更",
+    "overwrite": "允許覆寫",
+    "duration": "每幀時間（毫秒）",
+    "loop": "循環次數",
+    "color_mode": "色彩模式",
+    "text": "浮水印文字",
+    "font_path": "自訂字型",
+    "font_size": "字型大小",
+    "rotation": "旋轉角度",
+    "opacity": "透明度",
+    "ignore_bottom_ratio": "忽略底部比例",
+    "allow_low_confidence": "接受低信心配對",
+    "crop_subtitles": "保留最底部字幕",
+    "subtitle_crop_ratio": "字幕區高度比例",
+}
+
+DEFAULT_ADVANCED_PARAMS = {
+    "output_path",
+    "output_dir",
+    "overwrite",
+    "password",
+    "font_path",
+    "font_size",
+    "color_mode",
+    "ignore_bottom_ratio",
+    "allow_low_confidence",
+    "crop_subtitles",
+    "subtitle_crop_ratio",
+    "loop",
+    "rotation",
+    "opacity",
+}
+
+
 @dataclass(frozen=True)
 class ToolParam:
     name: str
@@ -15,6 +63,9 @@ class ToolParam:
     default: Any = None
     description: str = ""
     choices: tuple[str, ...] = ()
+    label: str = ""
+    advanced: bool = False
+    default_hint: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -22,11 +73,15 @@ class ToolParam:
             "type": self.type,
             "required": self.required,
             "description": self.description,
+            "label": self.label or PARAM_LABELS.get(self.name, self.name),
+            "advanced": self.advanced or self.name in DEFAULT_ADVANCED_PARAMS,
         }
         if self.default is not None:
             data["default"] = self.default
         if self.choices:
             data["choices"] = list(self.choices)
+        if self.default_hint:
+            data["default_hint"] = self.default_hint
         return data
 
 
@@ -39,6 +94,7 @@ class ToolSpec:
     params: tuple[ToolParam, ...]
     handler: ToolHandler
     danger_level: str = "low"
+    featured: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -48,11 +104,12 @@ class ToolSpec:
             "description": self.description,
             "params": [param.to_dict() for param in self.params],
             "danger_level": self.danger_level,
+            "featured": self.featured,
         }
 
 
 def _specs() -> list[ToolSpec]:
-    from imgtools.core import merge, metadata, pdf, rename
+    from imgtools.core import gif, merge, metadata, pdf, rename, tif, watermark
 
     return [
         ToolSpec(
@@ -111,10 +168,37 @@ def _specs() -> list[ToolSpec]:
                 ToolParam("page", "int", False, 1, "頁碼，從 1 開始"),
                 ToolParam("dpi", "int", False, 192, "輸出 DPI"),
                 ToolParam("password", "string", False, description="PDF 密碼，沒有可留空"),
-                ToolParam("output_path", "path", False, description="輸出 PNG 路徑"),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到 PDF 旁。",
+                    default_hint="PDF 旁的 <檔名>_pageNNN.png",
+                ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
             handler=pdf.render_page,
+        ),
+        ToolSpec(
+            action="pdf.render_all_pages",
+            title="PDF 全頁轉 PNG",
+            category="pdf",
+            description="將 PDF 所有頁面依 DPI 輸出為 PNG。",
+            params=(
+                ToolParam("pdf_path", "path", True, description="輸入 PDF 路徑"),
+                ToolParam("dpi", "int", False, 192, "輸出 DPI"),
+                ToolParam("password", "string", False, description="PDF 密碼，沒有可留空"),
+                ToolParam(
+                    "output_dir",
+                    "folder",
+                    False,
+                    description="留白時在 PDF 旁建立專用資料夾。",
+                    default_hint="PDF 旁的 <檔名>_pages 資料夾",
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=pdf.render_all_pages,
+            featured=True,
         ),
         ToolSpec(
             action="merge.images_to_pdf",
@@ -123,10 +207,17 @@ def _specs() -> list[ToolSpec]:
             description="將資料夾內圖片依檔名排序後合併為 PDF。",
             params=(
                 ToolParam("folder_path", "folder", True, description="輸入圖片資料夾"),
-                ToolParam("output_path", "path", True, description="輸出 PDF 路徑"),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到圖片資料夾；既有檔案不會被覆寫。",
+                    default_hint="同資料夾的 output.pdf",
+                ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
             handler=merge.images_to_pdf,
+            featured=True,
         ),
         ToolSpec(
             action="merge.panorama_translation",
@@ -171,6 +262,92 @@ def _specs() -> list[ToolSpec]:
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
             handler=merge.panorama_translation,
+        ),
+        ToolSpec(
+            action="tif.split_pages",
+            title="拆分多頁 TIF",
+            category="tif",
+            description="將多頁 TIF 拆成依頁碼命名的單頁 TIF。",
+            params=(
+                ToolParam("input_path", "path", True, description="輸入多頁 TIF 路徑"),
+                ToolParam(
+                    "output_dir",
+                    "folder",
+                    False,
+                    description="留白時在 TIF 旁建立專用資料夾。",
+                    default_hint="TIF 旁的 <檔名>_pages 資料夾",
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=tif.split_pages,
+        ),
+        ToolSpec(
+            action="tif.extract_page",
+            title="抽出單頁 TIF",
+            category="tif",
+            description="從多頁 TIF 抽出指定頁面，頁碼從 1 開始。",
+            params=(
+                ToolParam("input_path", "path", True, description="輸入多頁 TIF 路徑"),
+                ToolParam("page", "int", False, 1, "頁碼，從 1 開始"),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到原 TIF 旁。",
+                    default_hint="TIF 旁的 <檔名>_pageNNN.tif",
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=tif.extract_page,
+        ),
+        ToolSpec(
+            action="gif.images_to_gif",
+            title="圖片序列轉 GIF",
+            category="gif",
+            description="將資料夾內圖片依檔名排序後輸出為 GIF。",
+            params=(
+                ToolParam("folder_path", "folder", True, description="輸入圖片資料夾"),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到圖片資料夾；既有檔案會自動加上編號。",
+                    default_hint="同資料夾的 output.gif",
+                ),
+                ToolParam("duration", "int", False, 40, "每幀顯示毫秒數"),
+                ToolParam("loop", "int", False, 0, "循環次數，0 表示無限循環"),
+                ToolParam(
+                    "color_mode", "string", False, "RGBA", "圖片色彩模式",
+                    choices=("RGBA", "RGB", "L"),
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=gif.images_to_gif,
+            featured=True,
+        ),
+        ToolSpec(
+            action="watermark.text",
+            title="加入文字浮水印",
+            category="watermark",
+            description="在圖片中央加入可旋轉的半透明文字浮水印。",
+            params=(
+                ToolParam("input_path", "path", True, description="輸入圖片路徑"),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時使用原圖片副檔名，輸出到同一資料夾。",
+                    default_hint="同資料夾的 output.<原副檔名>",
+                ),
+                ToolParam("text", "string", True, description="浮水印文字"),
+                ToolParam("font_path", "path", False, description="自訂字型檔路徑"),
+                ToolParam("font_size", "int", False, 0, "字型大小，0 表示自動"),
+                ToolParam("rotation", "float", False, 45, "旋轉角度"),
+                ToolParam("opacity", "int", False, 100, "透明度，0 到 255"),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=watermark.add_text,
+            featured=True,
         ),
     ]
 

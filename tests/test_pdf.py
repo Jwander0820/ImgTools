@@ -51,7 +51,25 @@ class PDFTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     render_page({"pdf_path": str(pdf_path), "page": 9})
 
+    def test_pdf_render_all_pages_outputs_every_page(self):
+        from imgtools.core.pdf import render_all_pages
+
+        with tempfile.TemporaryDirectory() as tmp:
+            pdf_path = Path(tmp) / "sample.pdf"
+            output_dir = Path(tmp) / "rendered"
+            pdf_path.write_text("fake", encoding="utf-8")
+
+            with patch("imgtools.core.pdf.PDFOperator", FakePDFOperator):
+                result = render_all_pages(
+                    {"pdf_path": str(pdf_path), "dpi": 144, "output_dir": str(output_dir)}
+                )
+
+            files = [Path(path) for path in result["outputs"]["files"]]
+            self.assertEqual([path.name for path in files], [
+                "sample_page1.png", "sample_page2.png", "sample_page3.png"
+            ])
+            self.assertTrue(all(path.exists() for path in files))
+
 
 if __name__ == "__main__":
     unittest.main()
-
