@@ -23,7 +23,15 @@ UI 會依 action registry 自動產生參數表單；輸出檔預設不覆寫。
 
 ### 快速使用
 
-首頁的「常用功能」來自 action registry 內各工具明確設定的 `featured` 旗標，不會追蹤或推算個人的使用頻率。目前使用者可直接點選常用工具，但尚未提供自訂增刪常用項目的介面。
+首頁的「常用功能」可由「管理常用功能」釘選，並用下列順序組成最多 8 個快速入口：
+
+1. 使用者釘選的工具，依釘選順序排列。
+2. 未釘選工具依成功執行次數與最近使用時間排列。
+3. 其餘空位由 action registry 的 `featured` 系統預設補足。
+
+只有成功執行工具才會累積次數；單純瀏覽或開啟工具不會記錄。快速入口會標示「已釘選」、「常用」或「預設」，方便確認每個項目的來源。
+
+釘選與使用次數保存在 Server 本機狀態檔 `data/.imgtools/preferences.json`，不依賴瀏覽器儲存，因此更新前端或更換瀏覽器後仍會保留。這個實際檔案已由 `.gitignore` 排除，不會提交或上傳；可提交的結構範例放在 `examples/preferences.example.json`。若希望將狀態放在版本目錄以外，可用 `IMGTOOLS_STATE_DIR` 指定固定的本機資料夾。
 
 上方橫軸的「預設檔名」是所有工具共用設定，並保存在目前瀏覽器：
 
@@ -47,7 +55,7 @@ UI 會依 action registry 自動產生參數表單；輸出檔預設不覆寫。
 
 影片功能透過 `imageio-ffmpeg` 內附的 ffmpeg 執行；若要指定自訂 ffmpeg，可在啟動前設定 `IMGTOOLS_FFMPEG`。
 
-執行 manifest 集中保存在 Server 端的 `data/.imgtools/manifests/`，不會再於來源或指定輸出資料夾建立 `.imgtools`；密碼等敏感參數會以 `[REDACTED]` 保存。如需改變狀態資料位置，可在啟動前設定 `IMGTOOLS_STATE_DIR`。
+執行 manifest 集中保存在 Server 端的 `data/.imgtools/manifests/`，常用功能偏好保存在同一狀態目錄的 `preferences.json`；不會再於來源或指定輸出資料夾建立 `.imgtools`。密碼等敏感參數會以 `[REDACTED]` 保存。如需改變狀態資料位置，可在啟動前設定 `IMGTOOLS_STATE_DIR`。
 
 ### 合併merge_img資料夾下的圖片 (merge_img.py)
 1. 合併為 多幀TIF檔案

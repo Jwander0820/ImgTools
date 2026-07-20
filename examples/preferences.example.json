@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "pinned_actions": [
+    "gif.images_to_gif",
+    "watermark.text"
+  ],
+  "usage": {
+    "gif.mp4_to_gif": {
+      "successful_runs": 3,
+      "last_used_at": "2026-07-20T12:00:00+08:00"
+    }
+  }
+}

@@ -8,7 +8,13 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from imgtools.ui.api import handle_get_tools, handle_pick, handle_run
+from imgtools.ui.api import (
+    handle_get_preferences,
+    handle_get_tools,
+    handle_pick,
+    handle_run,
+    handle_update_preferences,
+)
 
 
 STATIC_DIR = Path(__file__).with_name("static")
@@ -48,6 +54,9 @@ class ImgToolsHandler(BaseHTTPRequestHandler):
         if path == "/api/tools":
             self._send_json(handle_get_tools())
             return
+        if path == "/api/preferences":
+            self._send_json(handle_get_preferences())
+            return
         if path.startswith("/static/"):
             self._send_static(path.removeprefix("/static/"))
             return
@@ -55,13 +64,18 @@ class ImgToolsHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
-        if path not in {"/api/run", "/api/pick"}:
+        if path not in {"/api/run", "/api/pick", "/api/preferences"}:
             self._send_json({"ok": False, "message": "Not found"}, status=404)
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
             payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
-            result = handle_run(payload) if path == "/api/run" else handle_pick(payload)
+            if path == "/api/run":
+                result = handle_run(payload)
+            elif path == "/api/preferences":
+                result = handle_update_preferences(payload)
+            else:
+                result = handle_pick(payload)
             self._send_json(result)
         except Exception as exc:
             self._send_json(

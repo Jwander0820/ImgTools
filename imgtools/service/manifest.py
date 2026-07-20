@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from .state import state_root
 
 
 SENSITIVE_PARAM_NAMES = {"password", "token", "secret", "api_key"}
@@ -43,13 +44,7 @@ def write_manifest(
 
 
 def _manifest_dir() -> Path:
-    configured = os.environ.get("IMGTOOLS_STATE_DIR")
-    if configured:
-        state_root = Path(configured).expanduser().resolve()
-    else:
-        project_root = Path(__file__).resolve().parents[2]
-        state_root = project_root / "data" / ".imgtools"
-    return state_root / "manifests"
+    return state_root() / "manifests"
 
 
 def _redact_sensitive(value: Any) -> Any:

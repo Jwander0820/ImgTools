@@ -31,11 +31,39 @@ class UIAPITests(unittest.TestCase):
         from imgtools.ui.api import handle_run
 
         fake_result = {"ok": True, "action": "test.action", "outputs": {}, "warnings": []}
-        with patch("imgtools.ui.api.run_tool", return_value=fake_result):
+        with patch("imgtools.ui.api.run_tool", return_value=fake_result), patch(
+            "imgtools.ui.api.record_successful_run"
+        ) as record:
             result = handle_run({"action": "test.action", "params": {}})
 
         self.assertEqual(result, fake_result)
+        record.assert_called_once_with("test.action")
         json.dumps(result)
+
+    def test_api_run_does_not_record_failed_attempt(self):
+        from imgtools.ui.api import handle_run
+
+        fake_result = {"ok": False, "action": "test.action", "outputs": {}, "warnings": []}
+        with patch("imgtools.ui.api.run_tool", return_value=fake_result), patch(
+            "imgtools.ui.api.record_successful_run"
+        ) as record:
+            handle_run({"action": "test.action", "params": {}})
+
+        record.assert_not_called()
+
+    def test_api_reads_and_updates_quick_action_preferences(self):
+        from imgtools.ui.api import handle_get_preferences, handle_update_preferences
+
+        fake = {"pinned_actions": ["gif.images_to_gif"], "quick_actions": []}
+        with patch("imgtools.ui.api.get_preferences_view", return_value=fake):
+            result = handle_get_preferences()
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["pinned_actions"], ["gif.images_to_gif"])
+
+        with patch("imgtools.ui.api.update_pinned_actions", return_value=fake) as update:
+            result = handle_update_preferences({"pinned_actions": ["gif.images_to_gif"]})
+        self.assertTrue(result["ok"])
+        update.assert_called_once_with(["gif.images_to_gif"])
 
     def test_api_pick_validates_mode_and_returns_paths(self):
         from imgtools.ui.api import handle_pick

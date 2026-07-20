@@ -22,6 +22,7 @@ let selected = null;
 let activeCategory = 'all';
 let searchTerm = '';
 let outputNaming = loadOutputNaming();
+let preferences = { pinned_actions: [], usage: {}, quick_actions: [], max_pinned: 8 };
 const formState = {};
 
 const $ = (id) => document.getElementById(id);
@@ -31,6 +32,7 @@ async function boot() {
     button.addEventListener('click', () => setOutputNaming(button.dataset.outputNaming));
   });
   renderOutputNaming();
+  $('quick-settings').addEventListener('click', toggleQuickEditor);
   $('tool-search').addEventListener('input', (event) => {
     searchTerm = event.target.value.trim().toLocaleLowerCase();
     renderTools();
@@ -41,15 +43,41 @@ async function boot() {
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.message || '無法載入工具清單');
     tools = data.tools || [];
-    selected = tools.find((tool) => tool.featured) || tools[0] || null;
+    await refreshPreferences();
+    const firstQuickAction = preferences.quick_actions[0]?.action;
+    selected = tools.find((tool) => tool.action === firstQuickAction)
+      || tools.find((tool) => tool.featured)
+      || tools[0]
+      || null;
     renderCategories();
     renderQuickActions();
+    renderQuickEditor();
     renderTools();
     renderForm();
   } catch (error) {
     $('tool-title').textContent = '工具清單載入失敗';
     $('tool-description').textContent = `${error.message}。請重新啟動 ImgTools 後再試一次。`;
     setStatus('載入失敗', false);
+  }
+}
+
+async function refreshPreferences() {
+  try {
+    const response = await fetch('/api/preferences');
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.message || '無法載入常用功能設定');
+    preferences = data;
+  } catch (_error) {
+    if (!preferences.quick_actions.length) {
+      preferences = {
+        pinned_actions: [],
+        usage: {},
+        quick_actions: tools.filter((tool) => tool.featured).slice(0, 8).map((tool) => ({
+          action: tool.action, source: 'default', successful_runs: 0,
+        })),
+        max_pinned: 8,
+      };
+    }
   }
 }
 
@@ -88,8 +116,10 @@ function iconFor(category) {
 }
 
 function renderQuickActions() {
-  const featured = tools.filter((tool) => tool.featured);
-  $('quick-actions').replaceChildren(...featured.map((tool, index) => {
+  const quickActions = preferences.quick_actions
+    .map((preference) => ({ preference, tool: tools.find((tool) => tool.action === preference.action) }))
+    .filter((item) => item.tool);
+  $('quick-actions').replaceChildren(...quickActions.map(({ preference, tool }, index) => {
     const button = document.createElement('button');
     const isActive = selected && selected.action === tool.action;
     button.type = 'button';
@@ -98,11 +128,71 @@ function renderQuickActions() {
     button.innerHTML = `
       <span class="frame-index">${String(index + 1).padStart(2, '0')}</span>
       <span class="quick-icon">${iconFor(tool.category)}</span>
-      <span class="quick-copy"><strong>${escapeHtml(tool.title)}</strong><small>快速開啟</small></span>
+      <span class="quick-copy"><strong>${escapeHtml(tool.title)}</strong><small><span class="quick-source ${preference.source}">${escapeHtml(preferenceLabel(preference.source))}</span>${preference.successful_runs ? `${preference.successful_runs} 次成功執行` : '快速開啟'}</small></span>
       <svg class="launch-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>`;
     button.addEventListener('click', () => selectTool(tool, true));
     return button;
   }));
+}
+
+function preferenceLabel(source) {
+  if (source === 'pinned') return '已釘選';
+  if (source === 'frequent') return '常用';
+  return '預設';
+}
+
+function toggleQuickEditor() {
+  const editor = $('quick-action-editor');
+  const isOpening = editor.hidden;
+  editor.hidden = !isOpening;
+  $('quick-settings').setAttribute('aria-expanded', String(isOpening));
+  if (isOpening) renderQuickEditor();
+}
+
+function renderQuickEditor() {
+  const pinned = new Set(preferences.pinned_actions || []);
+  const maxPinned = preferences.max_pinned || 8;
+  $('pin-count').textContent = `${pinned.size} / ${maxPinned} 已釘選`;
+  $('quick-pin-list').replaceChildren(...tools.map((tool) => {
+    const button = document.createElement('button');
+    const isPinned = pinned.has(tool.action);
+    const usage = preferences.usage?.[tool.action]?.successful_runs || 0;
+    button.type = 'button';
+    button.className = `pin-choice${isPinned ? ' pinned' : ''}`;
+    button.dataset.pinAction = tool.action;
+    button.setAttribute('aria-pressed', String(isPinned));
+    button.disabled = !isPinned && pinned.size >= maxPinned;
+    button.innerHTML = `
+      <span class="pin-choice-icon">${iconFor(tool.category)}</span>
+      <span><strong>${escapeHtml(tool.title)}</strong><small>${escapeHtml(CATEGORY_LABELS[tool.category] || tool.category)} · ${usage} 次成功執行</small></span>
+      <svg class="pin-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.4 5.1 5.6.7-4.1 3.9 1.1 5.5-5-2.7-5 2.7 1.1-5.5L4 8.8l5.6-.7z"/></svg>`;
+    button.addEventListener('click', () => togglePinnedAction(tool.action, button));
+    return button;
+  }));
+}
+
+async function togglePinnedAction(action, button) {
+  const current = preferences.pinned_actions || [];
+  const isPinned = current.includes(action);
+  const next = isPinned ? current.filter((item) => item !== action) : [...current, action];
+  button.disabled = true;
+  $('quick-editor-status').textContent = '正在保存本機設定…';
+  try {
+    const response = await fetch('/api/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pinned_actions: next }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.message || '無法保存常用功能設定');
+    preferences = data;
+    renderQuickActions();
+    renderQuickEditor();
+    $('quick-editor-status').textContent = '已保存到這台電腦。';
+  } catch (error) {
+    $('quick-editor-status').textContent = `保存失敗：${error.message}`;
+    button.disabled = false;
+  }
 }
 
 function renderCategories() {
@@ -355,6 +445,11 @@ async function runTool(event) {
     $('result').textContent = JSON.stringify(data, null, 2);
     renderResult(data);
     setStatus(data.ok ? '處理完成' : '處理失敗', data.ok);
+    if (data.ok) {
+      await refreshPreferences();
+      renderQuickActions();
+      renderQuickEditor();
+    }
   } catch (error) {
     const data = { ok: false, message: error.message };
     $('result').textContent = JSON.stringify(data, null, 2);

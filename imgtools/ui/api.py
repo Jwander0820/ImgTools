@@ -4,6 +4,12 @@ from typing import Any
 
 from imgtools.service.registry import list_tools
 from imgtools.service.runner import run_tool
+from imgtools.service.preferences import (
+    PreferenceValidationError,
+    get_preferences_view,
+    record_successful_run,
+    update_pinned_actions,
+)
 from imgtools.ui.picker import pick_paths
 
 
@@ -12,6 +18,21 @@ PICKER_MODES = {"file", "files", "folder", "save"}
 
 def handle_get_tools() -> dict[str, Any]:
     return {"ok": True, "tools": list_tools()}
+
+
+def handle_get_preferences() -> dict[str, Any]:
+    return {"ok": True, **get_preferences_view()}
+
+
+def handle_update_preferences(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return {"ok": True, **update_pinned_actions(payload.get("pinned_actions"))}
+    except PreferenceValidationError as exc:
+        return {
+            "ok": False,
+            "error_code": "VALIDATION_ERROR",
+            "message": str(exc),
+        }
 
 
 def handle_run(payload: dict[str, Any]) -> dict[str, Any]:
@@ -24,7 +45,14 @@ def handle_run(payload: dict[str, Any]) -> dict[str, Any]:
             "outputs": {},
             "warnings": [],
         }
-    return run_tool(str(action), payload.get("params", {}))
+    action = str(action)
+    result = run_tool(action, payload.get("params", {}))
+    if result.get("ok"):
+        try:
+            record_successful_run(action)
+        except Exception as exc:
+            result.setdefault("warnings", []).append(f"無法保存常用功能紀錄：{exc}")
+    return result
 
 
 def handle_pick(payload: dict[str, Any]) -> dict[str, Any]:

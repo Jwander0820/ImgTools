@@ -189,6 +189,7 @@ dmypy.json
 !/imgtools/ui/static/.gitkeep
 !/data/
 /data/*
+/data/.imgtools/
 !/data/outputs/
 !/data/outputs/.gitkeep
 

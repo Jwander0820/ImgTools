@@ -14,6 +14,8 @@ class UIServerTests(unittest.TestCase):
         self.assertIn('id="tool-search"', INDEX_HTML)
         self.assertIn('id="category-filters"', INDEX_HTML)
         self.assertIn('id="quick-actions"', INDEX_HTML)
+        self.assertIn('id="quick-settings"', INDEX_HTML)
+        self.assertIn('id="quick-action-editor"', INDEX_HTML)
         self.assertIn('id="output-naming"', INDEX_HTML)
         self.assertIn('data-output-naming="fixed"', INDEX_HTML)
         self.assertIn('data-output-naming="source"', INDEX_HTML)
@@ -34,6 +36,9 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("localStorage", script)
         self.assertIn("output_naming: outputNaming", script)
         self.assertIn("param.source_default_hint", script)
+        self.assertIn("'/api/preferences'", script)
+        self.assertIn("preference.source", script)
+        self.assertIn("pinned_actions", script)
 
     def test_http_server_returns_static_assets(self):
         from imgtools.ui.server import create_server
@@ -76,6 +81,43 @@ class UIServerTests(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertTrue(body["ok"])
         self.assertIn("tools", body)
+
+    def test_http_server_reads_and_updates_preferences(self):
+        from imgtools.ui.server import create_server
+
+        get_result = {"ok": True, "pinned_actions": [], "quick_actions": []}
+        update_result = {"ok": True, "pinned_actions": ["gif.images_to_gif"], "quick_actions": []}
+        with patch("imgtools.ui.server.handle_get_preferences", return_value=get_result), patch(
+            "imgtools.ui.server.handle_update_preferences", return_value=update_result
+        ):
+            server = create_server("127.0.0.1", 0)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                host, port = server.server_address
+                conn = HTTPConnection(host, port, timeout=5)
+                conn.request("GET", "/api/preferences")
+                get_response = conn.getresponse()
+                get_body = json.loads(get_response.read().decode("utf-8"))
+
+                payload = json.dumps({"pinned_actions": ["gif.images_to_gif"]}).encode("utf-8")
+                conn.request(
+                    "POST",
+                    "/api/preferences",
+                    body=payload,
+                    headers={"Content-Type": "application/json"},
+                )
+                post_response = conn.getresponse()
+                post_body = json.loads(post_response.read().decode("utf-8"))
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+
+        self.assertEqual(get_response.status, 200)
+        self.assertEqual(get_body, get_result)
+        self.assertEqual(post_response.status, 200)
+        self.assertEqual(post_body, update_result)
 
     def test_http_server_runs_action(self):
         from imgtools.ui.server import create_server
