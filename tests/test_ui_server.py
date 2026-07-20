@@ -27,6 +27,7 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("tool.featured", script)
         self.assertIn("param.advanced", script)
         self.assertIn("'/api/pick'", script)
+        self.assertIn("video: '影片'", script)
 
     def test_http_server_returns_static_assets(self):
         from imgtools.ui.server import create_server

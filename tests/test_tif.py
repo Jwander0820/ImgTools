@@ -52,6 +52,32 @@ class TifTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 extract_page({"input_path": str(input_path), "page": 4})
 
+    def test_images_to_tif_sorts_images_and_uses_collision_free_default(self):
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "images"
+            folder.mkdir()
+            Image.new("RGB", (8, 6), "blue").save(folder / "02.png")
+            Image.new("RGB", (8, 6), "red").save(folder / "01.png")
+
+            first = run_tool("merge.images_to_tif", {"folder_path": str(folder)}, manifest=False)
+            second = run_tool("merge.images_to_tif", {"folder_path": str(folder)}, manifest=False)
+
+            self.assertTrue(first["ok"], first)
+            self.assertTrue(second["ok"], second)
+            first_path = Path(first["outputs"]["files"][0])
+            second_path = Path(second["outputs"]["files"][0])
+            self.assertEqual(first_path, folder / "output.tif")
+            self.assertEqual(second_path, folder / "output-2.tif")
+            self.assertEqual(first["outputs"]["page_count"], 2)
+            with Image.open(first_path) as image:
+                self.assertEqual(image.n_frames, 2)
+                image.seek(0)
+                self.assertEqual(image.convert("RGB").getpixel((0, 0)), (255, 0, 0))
+                image.seek(1)
+                self.assertEqual(image.convert("RGB").getpixel((0, 0)), (0, 0, 255))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,13 @@ class UIAPITests(unittest.TestCase):
 
         self.assertTrue(result["ok"])
         self.assertIn("tools", result)
+        actions = {tool["action"] for tool in result["tools"]}
+        self.assertTrue({
+            "video.extract_frames",
+            "gif.mp4_to_gif",
+            "gif.gif_to_mp4",
+            "merge.images_to_tif",
+        }.issubset(actions))
 
     def test_api_run_validates_payload(self):
         from imgtools.ui.api import handle_run

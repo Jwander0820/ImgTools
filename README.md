@@ -13,9 +13,10 @@
 - TIF / EXIF metadata 讀取。
 - 批次替換檔名與資料夾名稱（預設 dry-run）。
 - PDF 單頁或全頁轉 PNG。
-- 圖片合併 PDF、動畫平移長截圖。
+- 圖片合併 PDF／多頁 TIF、動畫平移長截圖。
 - 多頁 TIF 拆頁與指定頁抽出。
 - 圖片序列轉 GIF。
+- MP4 拆幀、MP4 轉 GIF、GIF 轉 MP4。
 - 文字浮水印。
 
 UI 會依 action registry 自動產生參數表單；輸出檔預設不覆寫。
@@ -28,8 +29,14 @@ UI 會依 action registry 自動產生參數表單；輸出檔預設不覆寫。
 
 - 圖片序列轉 GIF：輸出到圖片資料夾的 `output.gif`。
 - 圖片合併 PDF：輸出到圖片資料夾的 `output.pdf`。
+- 圖片合併多頁 TIF：輸出到圖片資料夾的 `output.tif`。
+- MP4 拆幀：輸出到影片旁的 `<影片檔名>_frames` 資料夾。
+- MP4 轉 GIF：輸出到影片旁的 `output.gif`。
+- GIF 轉 MP4：輸出到 GIF 旁的 `output.mp4`。
 - 文字浮水印：輸出到原圖片旁的 `output.<原副檔名>`。
-- 預設檔名已存在時會安全改用 `output-2.*`、`output-3.*`，不會覆寫舊檔。
+- 預設檔名或拆幀資料夾已存在時會安全加上 `-2`、`-3`，不會覆寫舊檔。
+
+影片功能透過 `imageio-ffmpeg` 內附的 ffmpeg 執行；若要指定自訂 ffmpeg，可在啟動前設定 `IMGTOOLS_FFMPEG`。
 
 執行 manifest 集中保存在 Server 端的 `data/.imgtools/manifests/`，不會再於來源或指定輸出資料夾建立 `.imgtools`；密碼等敏感參數會以 `[REDACTED]` 保存。如需改變狀態資料位置，可在啟動前設定 `IMGTOOLS_STATE_DIR`。
 

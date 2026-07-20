@@ -17,7 +17,11 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("merge.panorama_translation", actions)
         self.assertIn("tif.split_pages", actions)
         self.assertIn("tif.extract_page", actions)
+        self.assertIn("merge.images_to_tif", actions)
         self.assertIn("gif.images_to_gif", actions)
+        self.assertIn("video.extract_frames", actions)
+        self.assertIn("gif.mp4_to_gif", actions)
+        self.assertIn("gif.gif_to_mp4", actions)
         self.assertIn("watermark.text", actions)
 
     def test_get_tool_unknown_action_raises_error(self):
@@ -44,11 +48,22 @@ class RegistryTests(unittest.TestCase):
 
         self.assertIn("gif.images_to_gif", featured)
         self.assertIn("merge.images_to_pdf", featured)
+        self.assertIn("merge.images_to_tif", featured)
+        self.assertIn("video.extract_frames", featured)
+        self.assertIn("gif.mp4_to_gif", featured)
+        self.assertIn("gif.gif_to_mp4", featured)
         gif_params = {param["name"]: param for param in get_tool("gif.images_to_gif").to_dict()["params"]}
         self.assertFalse(gif_params["output_path"]["required"])
         self.assertTrue(gif_params["output_path"]["advanced"])
         self.assertEqual(gif_params["output_path"]["default_hint"], "同資料夾的 output.gif")
         self.assertEqual(gif_params["folder_path"]["label"], "圖片資料夾")
+        frame_params = {
+            param["name"]: param
+            for param in get_tool("video.extract_frames").to_dict()["params"]
+        }
+        self.assertFalse(frame_params["output_dir"]["required"])
+        self.assertTrue(frame_params["output_dir"]["advanced"])
+        self.assertEqual(frame_params["output_dir"]["default_hint"], "MP4 旁的 <檔名>_frames 資料夾")
 
     def test_every_tool_has_required_metadata(self):
         from imgtools.service.registry import list_tools

@@ -31,6 +31,8 @@ PARAM_LABELS = {
     "font_size": "字型大小",
     "rotation": "旋轉角度",
     "opacity": "透明度",
+    "fps": "輸出影格率（FPS）",
+    "compression": "TIF 壓縮方式",
     "ignore_bottom_ratio": "忽略底部比例",
     "allow_low_confidence": "接受低信心配對",
     "crop_subtitles": "保留最底部字幕",
@@ -52,6 +54,8 @@ DEFAULT_ADVANCED_PARAMS = {
     "loop",
     "rotation",
     "opacity",
+    "fps",
+    "compression",
 }
 
 
@@ -109,7 +113,7 @@ class ToolSpec:
 
 
 def _specs() -> list[ToolSpec]:
-    from imgtools.core import gif, merge, metadata, pdf, rename, tif, watermark
+    from imgtools.core import gif, merge, metadata, pdf, rename, tif, video, watermark
 
     return [
         ToolSpec(
@@ -220,6 +224,41 @@ def _specs() -> list[ToolSpec]:
             featured=True,
         ),
         ToolSpec(
+            action="merge.images_to_tif",
+            title="圖片合併為多頁 TIF",
+            category="merge",
+            description="將資料夾內圖片依檔名排序後合併為多頁 TIF。",
+            params=(
+                ToolParam("folder_path", "folder", True, description="輸入圖片資料夾"),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到圖片資料夾；既有檔案會自動加上編號。",
+                    default_hint="同資料夾的 output.tif",
+                ),
+                ToolParam(
+                    "compression",
+                    "string",
+                    False,
+                    "tiff_lzw",
+                    "輸出 TIF 的壓縮方式",
+                    choices=("tiff_lzw", "tiff_adobe_deflate", "raw"),
+                ),
+                ToolParam(
+                    "color_mode",
+                    "string",
+                    False,
+                    "RGB",
+                    "統一每頁的色彩模式",
+                    choices=("RGB", "RGBA", "L"),
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=tif.images_to_tif,
+            featured=True,
+        ),
+        ToolSpec(
             action="merge.panorama_translation",
             title="動畫平移長截圖",
             category="merge",
@@ -323,6 +362,66 @@ def _specs() -> list[ToolSpec]:
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
             handler=gif.images_to_gif,
+            featured=True,
+        ),
+        ToolSpec(
+            action="video.extract_frames",
+            title="MP4 拆幀",
+            category="video",
+            description="將 MP4 的所有影格依序輸出為 PNG。",
+            params=(
+                ToolParam("input_path", "path", True, description="輸入 MP4 路徑"),
+                ToolParam(
+                    "output_dir",
+                    "folder",
+                    False,
+                    description="留白時在 MP4 旁建立專用資料夾；既有資料夾會自動加上編號。",
+                    default_hint="MP4 旁的 <檔名>_frames 資料夾",
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出影格"),
+            ),
+            handler=video.extract_frames,
+            featured=True,
+        ),
+        ToolSpec(
+            action="gif.mp4_to_gif",
+            title="MP4 轉 GIF",
+            category="video",
+            description="將 MP4 轉成適合快速分享的 GIF 動畫。",
+            params=(
+                ToolParam("input_path", "path", True, description="輸入 MP4 路徑"),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到 MP4 同一資料夾；既有檔案會自動加上編號。",
+                    default_hint="同資料夾的 output.gif",
+                ),
+                ToolParam("fps", "int", False, 12, "GIF 每秒影格數"),
+                ToolParam("loop", "int", False, 0, "循環次數，0 表示無限循環"),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=video.mp4_to_gif,
+            featured=True,
+        ),
+        ToolSpec(
+            action="gif.gif_to_mp4",
+            title="GIF 轉 MP4",
+            category="video",
+            description="將 GIF 轉成相容性高的 H.264 MP4。",
+            params=(
+                ToolParam("input_path", "path", True, description="輸入 GIF 路徑"),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到 GIF 同一資料夾；既有檔案會自動加上編號。",
+                    default_hint="同資料夾的 output.mp4",
+                ),
+                ToolParam("fps", "int", False, 30, "MP4 每秒影格數"),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=video.gif_to_mp4,
             featured=True,
         ),
         ToolSpec(
