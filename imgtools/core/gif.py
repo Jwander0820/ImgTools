@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .common import abs_path, resolve_output_path
+from .common import abs_path, default_output_stem, resolve_output_path
 
 
 SUPPORTED_IMAGE_SUFFIXES = {".tif", ".tiff", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}
@@ -24,7 +24,7 @@ def images_to_gif(params: dict[str, Any]) -> dict[str, Any]:
 
     output_path = resolve_output_path(
         params.get("output_path"),
-        folder_path / "output.gif",
+        folder_path / f"{default_output_stem(params, folder_path)}.gif",
         overwrite=bool(params.get("overwrite", False)),
     )
     duration = int(params.get("duration", 40))

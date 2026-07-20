@@ -14,6 +14,9 @@ class UIServerTests(unittest.TestCase):
         self.assertIn('id="tool-search"', INDEX_HTML)
         self.assertIn('id="category-filters"', INDEX_HTML)
         self.assertIn('id="quick-actions"', INDEX_HTML)
+        self.assertIn('id="output-naming"', INDEX_HTML)
+        self.assertIn('data-output-naming="fixed"', INDEX_HTML)
+        self.assertIn('data-output-naming="source"', INDEX_HTML)
 
     def test_frontend_script_is_schema_driven_and_supports_path_lists(self):
         from imgtools.ui.server import STATIC_DIR
@@ -28,6 +31,9 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("param.advanced", script)
         self.assertIn("'/api/pick'", script)
         self.assertIn("video: '影片'", script)
+        self.assertIn("localStorage", script)
+        self.assertIn("output_naming: outputNaming", script)
+        self.assertIn("param.source_default_hint", script)
 
     def test_http_server_returns_static_assets(self):
         from imgtools.ui.server import create_server

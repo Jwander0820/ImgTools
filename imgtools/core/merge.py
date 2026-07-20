@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 from typing import Any
 
-from .common import abs_path, ensure_not_exists, ensure_parent, resolve_output_path
+from .common import abs_path, default_output_stem, resolve_output_path
 
 
 @dataclass(frozen=True)
@@ -31,9 +31,10 @@ def images_to_pdf(params: dict[str, Any]) -> dict[str, Any]:
     if not folder_path.is_dir():
         raise NotADirectoryError(f"Input folder does not exist: {folder_path}")
     overwrite = bool(params.get("overwrite", False))
+    default_name = f"{default_output_stem(params, folder_path)}.pdf"
     output_path = resolve_output_path(
         params.get("output_path"),
-        folder_path / "output.pdf",
+        folder_path / default_name,
         overwrite=overwrite,
     )
     result = merge_img_to_one_pdf(str(folder_path), str(output_path))
@@ -97,9 +98,11 @@ def panorama_translation(params: dict[str, Any]) -> dict[str, Any]:
         )
     else:
         panorama = _overwrite_compose(selected_images, positions)
-    output_path = paths[0].parent / "stitched" / f"{paths[0].stem}_stitched.png"
-    ensure_parent(output_path)
-    ensure_not_exists(output_path, overwrite=bool(params.get("overwrite", False)))
+    output_path = resolve_output_path(
+        None,
+        paths[0].parent / "stitched" / f"{default_output_stem(params, paths[0])}.png",
+        overwrite=bool(params.get("overwrite", False)),
+    )
     ok, encoded = cv2.imencode(".png", panorama)
     if not ok:
         raise OSError(f"Could not encode panorama output: {output_path}")

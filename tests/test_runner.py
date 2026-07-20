@@ -7,6 +7,27 @@ from unittest.mock import patch
 
 
 class RunnerTests(unittest.TestCase):
+    def test_prepare_params_preserves_valid_global_output_naming(self):
+        from imgtools.service.registry import ToolParam
+        from imgtools.service.runner import _prepare_params
+
+        params = _prepare_params(
+            (ToolParam("input_path", "path", True),),
+            {"input_path": "photo.png", "output_naming": "source"},
+        )
+
+        self.assertEqual(params["output_naming"], "source")
+
+    def test_prepare_params_rejects_unknown_global_output_naming(self):
+        from imgtools.service.registry import ToolParam
+        from imgtools.service.runner import ToolValidationError, _prepare_params
+
+        with self.assertRaises(ToolValidationError):
+            _prepare_params(
+                (ToolParam("input_path", "path", True),),
+                {"input_path": "photo.png", "output_naming": "surprise"},
+            )
+
     def test_prepare_params_coerces_path_list_and_float(self):
         from imgtools.service.registry import ToolParam
         from imgtools.service.runner import _prepare_params

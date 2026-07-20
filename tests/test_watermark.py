@@ -39,6 +39,47 @@ class WatermarkTests(unittest.TestCase):
             self.assertEqual(Path(result["outputs"]["files"][0]), Path(tmp) / "output.png")
             self.assertTrue((Path(tmp) / "output.png").is_file())
 
+    def test_text_watermark_source_mode_never_overwrites_same_format_input(self):
+        from imgtools.core.watermark import add_text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "photo.png"
+            Image.new("RGB", (80, 60), "white").save(input_path)
+
+            first = add_text({
+                "input_path": str(input_path),
+                "text": "TEST",
+                "output_naming": "source",
+            })
+            second = add_text({
+                "input_path": str(input_path),
+                "text": "TEST",
+                "output_naming": "source",
+            })
+
+            self.assertEqual(Path(first["outputs"]["files"][0]), Path(tmp) / "photo-2.png")
+            self.assertEqual(Path(second["outputs"]["files"][0]), Path(tmp) / "photo-3.png")
+            with Image.open(input_path) as image:
+                self.assertEqual(image.convert("RGB").getpixel((0, 0)), (255, 255, 255))
+
+    def test_text_watermark_source_mode_protects_input_even_with_overwrite(self):
+        from imgtools.core.watermark import add_text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "photo.png"
+            Image.new("RGB", (80, 60), "white").save(input_path)
+
+            result = add_text({
+                "input_path": str(input_path),
+                "text": "TEST",
+                "output_naming": "source",
+                "overwrite": True,
+            })
+
+            self.assertEqual(Path(result["outputs"]["files"][0]), Path(tmp) / "photo-2.png")
+            with Image.open(input_path) as image:
+                self.assertEqual(image.convert("RGB").getpixel((0, 0)), (255, 255, 255))
+
 
 if __name__ == "__main__":
     unittest.main()

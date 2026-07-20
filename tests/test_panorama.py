@@ -281,7 +281,7 @@ class PanoramaTranslationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "same dimensions"):
                 panorama_translation({"input_paths": [str(first), str(second)]})
 
-    def test_existing_output_requires_overwrite(self):
+    def test_existing_default_output_gets_collision_free_name(self):
         from imgtools.core.merge import PairMatch, panorama_translation
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -289,14 +289,16 @@ class PanoramaTranslationTests(unittest.TestCase):
             paths = [root / "a.png", root / "b.png"]
             for path in paths:
                 _write_image(path, np.zeros((40, 60, 3), dtype=np.uint8))
-            output = root / "stitched" / "a_stitched.png"
+            output = root / "stitched" / "output.png"
             output.parent.mkdir()
             output.write_bytes(b"existing")
             match = PairMatch(matched=True, dx=10.0, dy=0.0, inliers=20, candidates=20, inlier_ratio=1.0)
 
             with patch("imgtools.core.merge.estimate_translation", return_value=match):
-                with self.assertRaises(FileExistsError):
-                    panorama_translation({"input_paths": [str(path) for path in paths]})
+                result = panorama_translation({"input_paths": [str(path) for path in paths]})
+
+            self.assertEqual(Path(result["outputs"]["files"][0]), output.with_name("output-2.png"))
+            self.assertEqual(output.read_bytes(), b"existing")
 
 
 if __name__ == "__main__":

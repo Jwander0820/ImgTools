@@ -66,9 +66,25 @@ class PDFTests(unittest.TestCase):
 
             files = [Path(path) for path in result["outputs"]["files"]]
             self.assertEqual([path.name for path in files], [
-                "sample_page1.png", "sample_page2.png", "sample_page3.png"
+                "output_page1.png", "output_page2.png", "output_page3.png"
             ])
             self.assertTrue(all(path.exists() for path in files))
+
+    def test_pdf_render_all_pages_source_mode_uses_original_stem(self):
+        from imgtools.core.pdf import render_all_pages
+
+        with tempfile.TemporaryDirectory() as tmp:
+            pdf_path = Path(tmp) / "sample.pdf"
+            pdf_path.write_text("fake", encoding="utf-8")
+
+            with patch("imgtools.core.pdf.PDFOperator", FakePDFOperator):
+                result = render_all_pages(
+                    {"pdf_path": str(pdf_path), "output_naming": "source"}
+                )
+
+            files = [Path(path) for path in result["outputs"]["files"]]
+            self.assertEqual(files[0].parent.name, "sample_pages")
+            self.assertEqual(files[0].name, "sample_page1.png")
 
 
 if __name__ == "__main__":

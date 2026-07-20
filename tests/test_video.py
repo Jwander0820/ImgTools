@@ -62,12 +62,29 @@ class VideoTests(unittest.TestCase):
             self.assertTrue(result["ok"], result)
             files = [Path(path) for path in result["outputs"]["files"]]
             self.assertEqual([path.name for path in files], [
-                "frame_000001.png", "frame_000002.png", "frame_000003.png"
+                "output_frame_000001.png", "output_frame_000002.png", "output_frame_000003.png"
             ])
-            self.assertEqual(Path(result["outputs"]["output_dir"]), input_path.with_name("sample_frames"))
+            self.assertEqual(Path(result["outputs"]["output_dir"]), input_path.with_name("output_frames"))
             self.assertEqual(result["outputs"]["frame_count"], 3)
             with Image.open(files[0]) as image:
                 self.assertEqual(image.size, (16, 12))
+
+    def test_extract_frames_source_mode_uses_original_stem(self):
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "sample.mp4"
+            _make_three_frame_mp4(input_path)
+
+            result = run_tool(
+                "video.extract_frames",
+                {"input_path": str(input_path), "output_naming": "source"},
+                manifest=False,
+            )
+
+            files = [Path(path) for path in result["outputs"]["files"]]
+            self.assertEqual(files[0].parent.name, "sample_frames")
+            self.assertEqual(files[0].name, "sample_frame_000001.png")
 
     def test_mp4_to_gif_uses_simple_collision_free_output(self):
         from imgtools.service.runner import run_tool

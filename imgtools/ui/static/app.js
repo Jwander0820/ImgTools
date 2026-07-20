@@ -15,15 +15,22 @@ const CATEGORY_ICONS = {
   watermark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 12 4l8 14M7 13h10M6 21h12"/></svg>',
 };
 
+const OUTPUT_NAMING_STORAGE_KEY = 'imgtools.outputNaming';
+
 let tools = [];
 let selected = null;
 let activeCategory = 'all';
 let searchTerm = '';
+let outputNaming = loadOutputNaming();
 const formState = {};
 
 const $ = (id) => document.getElementById(id);
 
 async function boot() {
+  document.querySelectorAll('[data-output-naming]').forEach((button) => {
+    button.addEventListener('click', () => setOutputNaming(button.dataset.outputNaming));
+  });
+  renderOutputNaming();
   $('tool-search').addEventListener('input', (event) => {
     searchTerm = event.target.value.trim().toLocaleLowerCase();
     renderTools();
@@ -44,6 +51,36 @@ async function boot() {
     $('tool-description').textContent = `${error.message}。請重新啟動 ImgTools 後再試一次。`;
     setStatus('載入失敗', false);
   }
+}
+
+function loadOutputNaming() {
+  try {
+    const saved = window.localStorage.getItem(OUTPUT_NAMING_STORAGE_KEY);
+    return saved === 'source' ? 'source' : 'fixed';
+  } catch (_error) {
+    return 'fixed';
+  }
+}
+
+function setOutputNaming(mode) {
+  if (!['fixed', 'source'].includes(mode) || mode === outputNaming) return;
+  saveFormState();
+  outputNaming = mode;
+  try {
+    window.localStorage.setItem(OUTPUT_NAMING_STORAGE_KEY, mode);
+  } catch (_error) {
+    // The setting still applies for this session when storage is unavailable.
+  }
+  renderOutputNaming();
+  renderForm();
+}
+
+function renderOutputNaming() {
+  document.querySelectorAll('[data-output-naming]').forEach((button) => {
+    const isActive = button.dataset.outputNaming === outputNaming;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
 }
 
 function iconFor(category) {
@@ -162,12 +199,18 @@ function renderForm() {
       <span>開始處理</span>
     </button>
     <button class="secondary" id="copy-task" type="button">複製工作 JSON</button>
-    <span class="action-note">輸出留白時，自動存到來源旁</span>`;
+    <span class="action-note">${escapeHtml(outputNamingNote())}</span>`;
   nodes.push(actions);
 
   form.replaceChildren(...nodes);
   form.onsubmit = runTool;
   $('copy-task').onclick = copyTask;
+}
+
+function outputNamingNote() {
+  return outputNaming === 'source'
+    ? '留白時跟隨來源命名；重名會先自動加編號'
+    : '留白時使用 output；重名會先自動加編號';
 }
 
 function valueFor(param) {
@@ -193,7 +236,8 @@ function renderField(param) {
   }
 
   const required = param.required ? '<span class="required">必填</span>' : '<span class="optional">選填</span>';
-  const defaultHint = param.default_hint ? `<span class="default-hint">預設：${escapeHtml(param.default_hint)}</span>` : '';
+  const hint = defaultHintFor(param);
+  const defaultHint = hint ? `<span class="default-hint">預設：${escapeHtml(hint)}</span>` : '';
   const label = `<label class="field-label" for="${id}"><span>${escapeHtml(param.label)}</span>${required}</label>`;
   let control;
   if (param.type === 'path_list') {
@@ -252,10 +296,16 @@ async function openPicker(param, button) {
 }
 
 function inputPlaceholder(param) {
-  if (param.default_hint) return `留白即可使用${param.default_hint}`;
+  const hint = defaultHintFor(param);
+  if (hint) return `留白即可使用${hint}`;
   if (param.type === 'path') return '貼上完整檔案路徑，或按「選擇」';
   if (param.type === 'folder') return '貼上資料夾路徑，或按「選擇」';
   return param.required ? '請輸入內容' : '選填';
+}
+
+function defaultHintFor(param) {
+  if (outputNaming === 'source' && param.source_default_hint) return param.source_default_hint;
+  return param.default_hint || '';
 }
 
 function booleanHint(name) {
@@ -265,7 +315,7 @@ function booleanHint(name) {
 }
 
 function readFormValues(includeEmpty = false) {
-  const output = {};
+  const output = { output_naming: outputNaming };
   if (!selected) return output;
   selected.params.forEach((param) => {
     const element = $(`param_${param.name}`);

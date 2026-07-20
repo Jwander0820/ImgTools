@@ -6,7 +6,12 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from .common import abs_path, resolve_output_path
+from .common import (
+    abs_path,
+    default_output_stem,
+    resolve_output_directory,
+    resolve_output_path,
+)
 
 
 class MediaConversionError(RuntimeError):
@@ -49,35 +54,20 @@ def _run_ffmpeg(arguments: list[str]) -> None:
         raise MediaConversionError(message)
 
 
-def _output_directory(value: Any, default_path: Path, *, overwrite: bool) -> Path:
-    if value:
-        output_dir = Path(str(value)).expanduser().resolve()
-    else:
-        output_dir = default_path.expanduser().resolve()
-        if output_dir.exists() and not overwrite:
-            counter = 2
-            while True:
-                candidate = output_dir.with_name(f"{output_dir.name}-{counter}")
-                if not candidate.exists():
-                    output_dir = candidate
-                    break
-                counter += 1
-    output_dir.mkdir(parents=True, exist_ok=True)
-    return output_dir
-
-
 def extract_frames(params: dict[str, Any]) -> dict[str, Any]:
     input_path = Path(str(params["input_path"])).expanduser().resolve()
     if not input_path.is_file():
         raise FileNotFoundError(f"Input MP4 does not exist: {input_path}")
 
     overwrite = bool(params.get("overwrite", False))
-    output_dir = _output_directory(
+    output_stem = default_output_stem(params, input_path)
+    output_dir = resolve_output_directory(
         params.get("output_dir"),
-        input_path.with_name(f"{input_path.stem}_frames"),
+        input_path.with_name(f"{output_stem}_frames"),
         overwrite=overwrite,
     )
-    existing_frames = sorted(output_dir.glob("frame_*.png"))
+    frame_pattern = f"{output_stem}_frame_*.png"
+    existing_frames = sorted(output_dir.glob(frame_pattern))
     if existing_frames and not overwrite:
         raise FileExistsError(f"Output frames already exist in: {output_dir}")
     if overwrite:
@@ -94,10 +84,10 @@ def extract_frames(params: dict[str, Any]) -> dict[str, Any]:
         "passthrough",
         "-start_number",
         "1",
-        str(output_dir / "frame_%06d.png"),
+        str(output_dir / f"{output_stem}_frame_%06d.png"),
     ])
 
-    output_paths = sorted(output_dir.glob("frame_*.png"))
+    output_paths = sorted(output_dir.glob(frame_pattern))
     if not output_paths:
         raise MediaConversionError("No video frames were produced.")
     return {
@@ -125,7 +115,7 @@ def mp4_to_gif(params: dict[str, Any]) -> dict[str, Any]:
     overwrite = bool(params.get("overwrite", False))
     output_path = resolve_output_path(
         params.get("output_path"),
-        input_path.with_name("output.gif"),
+        input_path.with_name(f"{default_output_stem(params, input_path)}.gif"),
         overwrite=overwrite,
     )
 
@@ -163,7 +153,7 @@ def gif_to_mp4(params: dict[str, Any]) -> dict[str, Any]:
     overwrite = bool(params.get("overwrite", False))
     output_path = resolve_output_path(
         params.get("output_path"),
-        input_path.with_name("output.mp4"),
+        input_path.with_name(f"{default_output_stem(params, input_path)}.mp4"),
         overwrite=overwrite,
     )
 

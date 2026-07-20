@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from imgtools.core.common import OUTPUT_NAMING_FIXED, OUTPUT_NAMING_MODES
+
 from .manifest import now_iso, write_manifest
 from .registry import ToolParam, get_tool
 from .safety import default_params_for_safety
@@ -53,6 +55,15 @@ def _prepare_params(spec_params: tuple[ToolParam, ...], raw_params: dict[str, An
             choices = ", ".join(param.choices)
             raise ToolValidationError(f"{param.name} must be one of: {choices}")
         params[param.name] = value
+    output_naming = raw_params.get("output_naming")
+    if not _is_empty(output_naming):
+        output_naming = str(output_naming)
+        if output_naming not in OUTPUT_NAMING_MODES:
+            choices = ", ".join(sorted(OUTPUT_NAMING_MODES))
+            raise ToolValidationError(f"output_naming must be one of: {choices}")
+        params["output_naming"] = output_naming
+    else:
+        params["output_naming"] = OUTPUT_NAMING_FIXED
     return params
 
 

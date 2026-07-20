@@ -70,6 +70,7 @@ class ToolParam:
     label: str = ""
     advanced: bool = False
     default_hint: str = ""
+    source_default_hint: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -86,6 +87,8 @@ class ToolParam:
             data["choices"] = list(self.choices)
         if self.default_hint:
             data["default_hint"] = self.default_hint
+        if self.source_default_hint:
+            data["source_default_hint"] = self.source_default_hint
         return data
 
 
@@ -177,7 +180,8 @@ def _specs() -> list[ToolSpec]:
                     "path",
                     False,
                     description="留白時輸出到 PDF 旁。",
-                    default_hint="PDF 旁的 <檔名>_pageNNN.png",
+                    default_hint="PDF 旁的 output_pageNNN.png",
+                    source_default_hint="PDF 旁的 <原始檔名>_pageNNN.png",
                 ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
@@ -197,7 +201,8 @@ def _specs() -> list[ToolSpec]:
                     "folder",
                     False,
                     description="留白時在 PDF 旁建立專用資料夾。",
-                    default_hint="PDF 旁的 <檔名>_pages 資料夾",
+                    default_hint="PDF 旁的 output_pages 資料夾",
+                    source_default_hint="PDF 旁的 <原始檔名>_pages 資料夾",
                 ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
@@ -217,6 +222,7 @@ def _specs() -> list[ToolSpec]:
                     False,
                     description="留白時輸出到圖片資料夾；既有檔案不會被覆寫。",
                     default_hint="同資料夾的 output.pdf",
+                    source_default_hint="同資料夾的 <資料夾名稱>.pdf",
                 ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
@@ -236,6 +242,7 @@ def _specs() -> list[ToolSpec]:
                     False,
                     description="留白時輸出到圖片資料夾；既有檔案會自動加上編號。",
                     default_hint="同資料夾的 output.tif",
+                    source_default_hint="同資料夾的 <資料夾名稱>.tif",
                 ),
                 ToolParam(
                     "compression",
@@ -314,7 +321,8 @@ def _specs() -> list[ToolSpec]:
                     "folder",
                     False,
                     description="留白時在 TIF 旁建立專用資料夾。",
-                    default_hint="TIF 旁的 <檔名>_pages 資料夾",
+                    default_hint="TIF 旁的 output_pages 資料夾",
+                    source_default_hint="TIF 旁的 <原始檔名>_pages 資料夾",
                 ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
@@ -333,7 +341,8 @@ def _specs() -> list[ToolSpec]:
                     "path",
                     False,
                     description="留白時輸出到原 TIF 旁。",
-                    default_hint="TIF 旁的 <檔名>_pageNNN.tif",
+                    default_hint="TIF 旁的 output_pageNNN.tif",
+                    source_default_hint="TIF 旁的 <原始檔名>_pageNNN.tif",
                 ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
@@ -352,6 +361,7 @@ def _specs() -> list[ToolSpec]:
                     False,
                     description="留白時輸出到圖片資料夾；既有檔案會自動加上編號。",
                     default_hint="同資料夾的 output.gif",
+                    source_default_hint="同資料夾的 <資料夾名稱>.gif",
                 ),
                 ToolParam("duration", "int", False, 40, "每幀顯示毫秒數"),
                 ToolParam("loop", "int", False, 0, "循環次數，0 表示無限循環"),
@@ -376,7 +386,8 @@ def _specs() -> list[ToolSpec]:
                     "folder",
                     False,
                     description="留白時在 MP4 旁建立專用資料夾；既有資料夾會自動加上編號。",
-                    default_hint="MP4 旁的 <檔名>_frames 資料夾",
+                    default_hint="MP4 旁的 output_frames 資料夾",
+                    source_default_hint="MP4 旁的 <原始檔名>_frames 資料夾",
                 ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出影格"),
             ),
@@ -396,6 +407,7 @@ def _specs() -> list[ToolSpec]:
                     False,
                     description="留白時輸出到 MP4 同一資料夾；既有檔案會自動加上編號。",
                     default_hint="同資料夾的 output.gif",
+                    source_default_hint="同資料夾的 <原始檔名>.gif",
                 ),
                 ToolParam("fps", "int", False, 12, "GIF 每秒影格數"),
                 ToolParam("loop", "int", False, 0, "循環次數，0 表示無限循環"),
@@ -417,6 +429,7 @@ def _specs() -> list[ToolSpec]:
                     False,
                     description="留白時輸出到 GIF 同一資料夾；既有檔案會自動加上編號。",
                     default_hint="同資料夾的 output.mp4",
+                    source_default_hint="同資料夾的 <原始檔名>.mp4",
                 ),
                 ToolParam("fps", "int", False, 30, "MP4 每秒影格數"),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
@@ -437,6 +450,7 @@ def _specs() -> list[ToolSpec]:
                     False,
                     description="留白時使用原圖片副檔名，輸出到同一資料夾。",
                     default_hint="同資料夾的 output.<原副檔名>",
+                    source_default_hint="同資料夾的 <原始檔名>-2.<原副檔名>",
                 ),
                 ToolParam("text", "string", True, description="浮水印文字"),
                 ToolParam("font_path", "path", False, description="自訂字型檔路徑"),

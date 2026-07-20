@@ -22,9 +22,22 @@ class TifTests(unittest.TestCase):
 
             files = [Path(path) for path in result["outputs"]["files"]]
             self.assertEqual([path.name for path in files], [
-                "sample_page001.tif", "sample_page002.tif", "sample_page003.tif"
+                "output_page001.tif", "output_page002.tif", "output_page003.tif"
             ])
             self.assertTrue(all(path.exists() for path in files))
+
+    def test_split_pages_source_mode_uses_original_stem(self):
+        from imgtools.core.tif import split_pages
+
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "sample.tif"
+            self._make_multipage_tif(input_path)
+
+            result = split_pages({"input_path": str(input_path), "output_naming": "source"})
+
+            files = [Path(path) for path in result["outputs"]["files"]]
+            self.assertEqual(files[0].parent.name, "sample_pages")
+            self.assertEqual(files[0].name, "sample_page001.tif")
 
     def test_extract_page_uses_one_based_page_number(self):
         from imgtools.core.tif import extract_page

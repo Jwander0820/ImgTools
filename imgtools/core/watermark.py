@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .common import abs_path, resolve_output_path
+from .common import abs_path, default_output_stem, resolve_output_path
 
 
 def add_text(params: dict[str, Any]) -> dict[str, Any]:
@@ -15,8 +15,9 @@ def add_text(params: dict[str, Any]) -> dict[str, Any]:
     suffix = input_path.suffix or ".png"
     output_path = resolve_output_path(
         params.get("output_path"),
-        input_path.with_name(f"output{suffix}"),
+        input_path.with_name(f"{default_output_stem(params, input_path)}{suffix}"),
         overwrite=bool(params.get("overwrite", False)),
+        protected_paths=(input_path,),
     )
 
     text = str(params["text"])

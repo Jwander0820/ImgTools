@@ -19,9 +19,22 @@
         </span>
         <span><strong>ImgTools</strong><small>本機影像工作桌</small></span>
       </a>
-      <div class="server-state" title="檔案不會上傳到網路">
-        <span aria-hidden="true"></span>
-        <div><strong>Local server</strong><small>檔案留在這台電腦</small></div>
+      <div class="topbar-controls">
+        <div class="global-setting">
+          <span class="setting-label">預設檔名</span>
+          <div id="output-naming" class="naming-switch" role="group" aria-label="所有工具的預設輸出檔名">
+            <button type="button" data-output-naming="fixed" aria-pressed="true">
+              <strong>統一命名</strong><code>output.ext</code>
+            </button>
+            <button type="button" data-output-naming="source" aria-pressed="false">
+              <strong>跟隨來源</strong><code>原始檔名.ext</code>
+            </button>
+          </div>
+        </div>
+        <div class="server-state" title="檔案不會上傳到網路">
+          <span aria-hidden="true"></span>
+          <div><strong>Local server</strong><small>檔案留在這台電腦</small></div>
+        </div>
       </div>
     </header>
 

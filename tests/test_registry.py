@@ -56,6 +56,10 @@ class RegistryTests(unittest.TestCase):
         self.assertFalse(gif_params["output_path"]["required"])
         self.assertTrue(gif_params["output_path"]["advanced"])
         self.assertEqual(gif_params["output_path"]["default_hint"], "同資料夾的 output.gif")
+        self.assertEqual(
+            gif_params["output_path"]["source_default_hint"],
+            "同資料夾的 <資料夾名稱>.gif",
+        )
         self.assertEqual(gif_params["folder_path"]["label"], "圖片資料夾")
         frame_params = {
             param["name"]: param
@@ -63,7 +67,11 @@ class RegistryTests(unittest.TestCase):
         }
         self.assertFalse(frame_params["output_dir"]["required"])
         self.assertTrue(frame_params["output_dir"]["advanced"])
-        self.assertEqual(frame_params["output_dir"]["default_hint"], "MP4 旁的 <檔名>_frames 資料夾")
+        self.assertEqual(frame_params["output_dir"]["default_hint"], "MP4 旁的 output_frames 資料夾")
+        self.assertEqual(
+            frame_params["output_dir"]["source_default_hint"],
+            "MP4 旁的 <原始檔名>_frames 資料夾",
+        )
 
     def test_every_tool_has_required_metadata(self):
         from imgtools.service.registry import list_tools
@@ -76,6 +84,14 @@ class RegistryTests(unittest.TestCase):
                 self.assertIsInstance(tool.get("params"), list)
                 self.assertIn(tool.get("danger_level"), {"low", "medium", "high"})
                 self.assertIsInstance(tool.get("featured"), bool)
+
+    def test_featured_tools_are_an_explicit_registry_choice(self):
+        from imgtools.service.registry import list_tools
+
+        featured = [tool["action"] for tool in list_tools() if tool["featured"]]
+
+        self.assertGreater(len(featured), 0)
+        self.assertLess(len(featured), len(list_tools()))
 
     def test_metadata_pil_reader_does_not_import_optional_readers(self):
         import builtins
