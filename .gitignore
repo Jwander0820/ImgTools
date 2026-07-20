@@ -194,3 +194,5 @@ dmypy.json
 
 
 /data/outputs/.gitkeep
+/docs/*.md
+*.md
