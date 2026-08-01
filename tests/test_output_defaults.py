@@ -35,6 +35,23 @@ class OutputDefaultTests(unittest.TestCase):
             self.assertEqual(output, Path(tmp) / "photo-3.png")
             self.assertEqual(source.read_bytes(), b"source")
 
+    def test_explicit_output_cannot_overwrite_a_protected_input(self):
+        from imgtools.core.common import resolve_output_path
+
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "photo.png"
+            source.write_bytes(b"source")
+
+            with self.assertRaisesRegex(ValueError, "protected input"):
+                resolve_output_path(
+                    source,
+                    source.with_name("output.png"),
+                    overwrite=True,
+                    protected_paths=(source,),
+                )
+
+            self.assertEqual(source.read_bytes(), b"source")
+
     def test_images_to_pdf_defaults_output_beside_source_folder(self):
         from imgtools.core.merge import images_to_pdf
 

@@ -13,12 +13,15 @@ class ToolValidationError(ValueError):
     pass
 
 
-def run_tool(action: str, raw_params: dict[str, Any], *, manifest: bool = True) -> dict[str, Any]:
+def run_tool(action: str, raw_params: Any, *, manifest: bool = True) -> dict[str, Any]:
     started_at = now_iso()
-    params = dict(raw_params)
+    params: dict[str, Any] = {}
     try:
+        if not isinstance(raw_params, dict):
+            raise ToolValidationError("params must be an object")
+        params = dict(raw_params)
         spec = get_tool(action)
-        params = _prepare_params(spec.params, raw_params)
+        params = _prepare_params(spec.params, params)
         params = default_params_for_safety(spec, params)
         result = spec.handler(params)
         result.setdefault("ok", True)

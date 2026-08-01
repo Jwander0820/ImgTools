@@ -27,6 +27,16 @@ class UIAPITests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["error_code"], "VALIDATION_ERROR")
 
+    def test_api_run_rejects_non_object_params_with_structured_error(self):
+        from imgtools.ui.api import handle_run
+
+        result = handle_run({"action": "pdf.render_page", "params": None})
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error_code"], "VALIDATION_ERROR")
+        self.assertEqual(result["outputs"], {})
+        self.assertEqual(result["warnings"], [])
+
     def test_api_run_returns_structured_result(self):
         from imgtools.ui.api import handle_run
 

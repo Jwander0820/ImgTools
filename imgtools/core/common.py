@@ -38,15 +38,17 @@ def resolve_output_path(
     protected_paths: tuple[str | Path, ...] = (),
 ) -> Path:
     """Resolve an explicit output or choose a collision-free default output."""
+    protected = {Path(path).expanduser().resolve() for path in protected_paths}
     if value:
         resolved = Path(value).expanduser().resolve()
+        if resolved in protected:
+            raise ValueError(f"Output path would overwrite a protected input: {resolved}")
         ensure_parent(resolved)
         ensure_not_exists(resolved, overwrite=overwrite)
         return resolved
 
     resolved = Path(default_path).expanduser().resolve()
     ensure_parent(resolved)
-    protected = {Path(path).expanduser().resolve() for path in protected_paths}
     if resolved not in protected and (overwrite or not resolved.exists()):
         return resolved
 

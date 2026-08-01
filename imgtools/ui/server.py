@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 from imgtools.ui.api import (
     handle_get_preferences,
+    handle_get_tool,
     handle_get_tools,
     handle_pick,
     handle_run,
@@ -53,6 +54,11 @@ class ImgToolsHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/tools":
             self._send_json(handle_get_tools())
+            return
+        if path.startswith("/api/tools/"):
+            action = path.removeprefix("/api/tools/")
+            result = handle_get_tool(action)
+            self._send_json(result, status=200 if result["ok"] else 404)
             return
         if path == "/api/preferences":
             self._send_json(handle_get_preferences())

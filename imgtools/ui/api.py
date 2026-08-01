@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from imgtools.service.registry import list_tools
+from imgtools.service.registry import get_tool, list_tools
 from imgtools.service.runner import run_tool
 from imgtools.service.preferences import (
     PreferenceValidationError,
@@ -18,6 +18,17 @@ PICKER_MODES = {"file", "files", "folder", "save"}
 
 def handle_get_tools() -> dict[str, Any]:
     return {"ok": True, "tools": list_tools()}
+
+
+def handle_get_tool(action: str) -> dict[str, Any]:
+    try:
+        return {"ok": True, "tool": get_tool(action).to_dict()}
+    except KeyError:
+        return {
+            "ok": False,
+            "error_code": "UNKNOWN_ACTION",
+            "message": f"Unknown action: {action}",
+        }
 
 
 def handle_get_preferences() -> dict[str, Any]:

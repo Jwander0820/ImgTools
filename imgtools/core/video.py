@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -70,26 +71,36 @@ def extract_frames(params: dict[str, Any]) -> dict[str, Any]:
     existing_frames = sorted(output_dir.glob(frame_pattern))
     if existing_frames and not overwrite:
         raise FileExistsError(f"Output frames already exist in: {output_dir}")
-    if overwrite:
-        for frame_path in existing_frames:
-            frame_path.unlink()
 
-    _run_ffmpeg([
-        "-y" if overwrite else "-n",
-        "-i",
-        str(input_path),
-        "-map",
-        "0:v:0",
-        "-fps_mode",
-        "passthrough",
-        "-start_number",
-        "1",
-        str(output_dir / f"{output_stem}_frame_%06d.png"),
-    ])
+    with tempfile.TemporaryDirectory(
+        prefix=f".{output_dir.name}-",
+        dir=output_dir.parent,
+    ) as temporary_dir:
+        temporary_root = Path(temporary_dir)
+        _run_ffmpeg([
+            "-n",
+            "-i",
+            str(input_path),
+            "-map",
+            "0:v:0",
+            "-fps_mode",
+            "passthrough",
+            "-start_number",
+            "1",
+            str(temporary_root / f"{output_stem}_frame_%06d.png"),
+        ])
 
-    output_paths = sorted(output_dir.glob(frame_pattern))
-    if not output_paths:
-        raise MediaConversionError("No video frames were produced.")
+        temporary_frames = sorted(temporary_root.glob(frame_pattern))
+        if not temporary_frames:
+            raise MediaConversionError("No video frames were produced.")
+
+        output_paths = []
+        for temporary_frame in temporary_frames:
+            output_path = output_dir / temporary_frame.name
+            if output_path.exists() and not overwrite:
+                raise FileExistsError(f"Output already exists: {output_path}")
+            temporary_frame.replace(output_path)
+            output_paths.append(output_path)
     return {
         "ok": True,
         "outputs": {

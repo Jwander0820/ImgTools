@@ -82,6 +82,27 @@ class UIServerTests(unittest.TestCase):
         self.assertTrue(body["ok"])
         self.assertIn("tools", body)
 
+    def test_http_server_returns_tool_details(self):
+        from imgtools.ui.server import create_server
+
+        server = create_server("127.0.0.1", 0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            host, port = server.server_address
+            conn = HTTPConnection(host, port, timeout=5)
+            conn.request("GET", "/api/tools/pdf.render_page")
+            response = conn.getresponse()
+            body = json.loads(response.read().decode("utf-8"))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+        self.assertEqual(response.status, 200)
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["tool"]["action"], "pdf.render_page")
+
     def test_http_server_reads_and_updates_preferences(self):
         from imgtools.ui.server import create_server
 

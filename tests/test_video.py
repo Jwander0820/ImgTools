@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -48,6 +49,35 @@ def _make_three_frame_mp4(path):
 
 
 class VideoTests(unittest.TestCase):
+    def test_extract_frames_preserves_existing_outputs_when_conversion_fails(self):
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            input_path = root / "sample.mp4"
+            input_path.write_bytes(b"not-a-real-video")
+            output_dir = root / "frames"
+            output_dir.mkdir()
+            existing_frame = output_dir / "output_frame_000001.png"
+            existing_frame.write_bytes(b"existing-user-data")
+
+            with patch.dict(
+                os.environ,
+                {"IMGTOOLS_FFMPEG": str(root / "missing-ffmpeg.exe")},
+            ):
+                result = run_tool(
+                    "video.extract_frames",
+                    {
+                        "input_path": str(input_path),
+                        "output_dir": str(output_dir),
+                        "overwrite": True,
+                    },
+                    manifest=False,
+                )
+
+            self.assertFalse(result["ok"])
+            self.assertEqual(existing_frame.read_bytes(), b"existing-user-data")
+
     def test_extract_frames_writes_all_frames_to_default_sibling_folder(self):
         from imgtools.service.runner import run_tool
 
