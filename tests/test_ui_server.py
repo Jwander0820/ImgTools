@@ -20,6 +20,19 @@ class UIServerTests(unittest.TestCase):
         self.assertIn('data-output-naming="fixed"', INDEX_HTML)
         self.assertIn('data-output-naming="source"', INDEX_HTML)
 
+    def test_frontend_exposes_server_pdf_default_dpi(self):
+        from imgtools.ui.server import INDEX_HTML, STATIC_DIR
+
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+
+        self.assertIn('id="pdf-default-dpi"', INDEX_HTML)
+        workbench = INDEX_HTML.index('id="workbench"')
+        dpi_setting = INDEX_HTML.index('id="pdf-default-setting"')
+        self.assertGreater(dpi_setting, workbench)
+        self.assertIn("savePdfDefaultDpi", script)
+        self.assertIn("pdf_default_dpi", script)
+        self.assertIn("selected.category !== 'pdf'", script)
+
     def test_frontend_script_is_schema_driven_and_supports_path_lists(self):
         from imgtools.ui.server import STATIC_DIR
 

@@ -27,6 +27,10 @@ def add_text(params: dict[str, Any]) -> dict[str, Any]:
     opacity = int(params.get("opacity", 100))
     if not 0 <= opacity <= 255:
         raise ValueError("opacity must be between 0 and 255")
+    position_mode = str(params.get("position", "center"))
+    margin = int(params.get("margin", 16))
+    if margin < 0:
+        raise ValueError("margin must be 0 or greater")
 
     with Image.open(input_path) as source:
         base = source.convert("RGBA")
@@ -45,7 +49,23 @@ def add_text(params: dict[str, Any]) -> dict[str, Any]:
     draw = ImageDraw.Draw(layer)
     draw.text((padding - bbox[0], padding - bbox[1]), text, font=font, fill=(0, 0, 0, opacity))
     rotated = layer.rotate(rotation, resample=Image.Resampling.BICUBIC, expand=True)
-    position = ((base.width - rotated.width) // 2, (base.height - rotated.height) // 2)
+    positions = {
+        "center": ((base.width - rotated.width) // 2, (base.height - rotated.height) // 2),
+        "top_left": (margin, margin),
+        "top_right": (base.width - rotated.width - margin, margin),
+        "bottom_left": (margin, base.height - rotated.height - margin),
+        "bottom_right": (
+            base.width - rotated.width - margin,
+            base.height - rotated.height - margin,
+        ),
+        "custom": (
+            int(params.get("position_x", 0)),
+            int(params.get("position_y", 0)),
+        ),
+    }
+    if position_mode not in positions:
+        raise ValueError(f"Unsupported watermark position: {position_mode}")
+    position = positions[position_mode]
     base.alpha_composite(rotated, position)
 
     output_suffix = output_path.suffix.lower()

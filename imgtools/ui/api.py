@@ -8,6 +8,7 @@ from imgtools.service.preferences import (
     PreferenceValidationError,
     get_preferences_view,
     record_successful_run,
+    update_pdf_default_dpi,
     update_pinned_actions,
 )
 from imgtools.ui.picker import pick_paths
@@ -37,7 +38,15 @@ def handle_get_preferences() -> dict[str, Any]:
 
 def handle_update_preferences(payload: dict[str, Any]) -> dict[str, Any]:
     try:
-        return {"ok": True, **update_pinned_actions(payload.get("pinned_actions"))}
+        if "pdf_default_dpi" in payload:
+            view = update_pdf_default_dpi(payload["pdf_default_dpi"])
+        elif "pinned_actions" in payload:
+            view = update_pinned_actions(payload["pinned_actions"])
+        else:
+            raise PreferenceValidationError(
+                "Provide pinned_actions or pdf_default_dpi"
+            )
+        return {"ok": True, **view}
     except PreferenceValidationError as exc:
         return {
             "ok": False,

@@ -31,8 +31,16 @@ PARAM_LABELS = {
     "font_size": "字型大小",
     "rotation": "旋轉角度",
     "opacity": "透明度",
+    "position": "浮水印位置",
+    "margin": "邊界距離",
+    "position_x": "自訂 X 座標",
+    "position_y": "自訂 Y 座標",
     "fps": "輸出影格率（FPS）",
     "compression": "TIF 壓縮方式",
+    "dilate_iterations": "文字連接強度",
+    "min_area": "最小區域面積",
+    "padding_ratio": "透明邊界比例",
+    "canvas_size": "固定畫布尺寸",
     "ignore_bottom_ratio": "忽略底部比例",
     "allow_low_confidence": "接受低信心配對",
     "crop_subtitles": "保留最底部字幕",
@@ -54,8 +62,16 @@ DEFAULT_ADVANCED_PARAMS = {
     "loop",
     "rotation",
     "opacity",
+    "position",
+    "margin",
+    "position_x",
+    "position_y",
     "fps",
     "compression",
+    "dilate_iterations",
+    "min_area",
+    "padding_ratio",
+    "canvas_size",
 }
 
 
@@ -116,7 +132,7 @@ class ToolSpec:
 
 
 def _specs() -> list[ToolSpec]:
-    from imgtools.core import gif, merge, metadata, pdf, rename, tif, video, watermark
+    from imgtools.core import crop, gif, merge, metadata, pdf, rename, tif, video, watermark
 
     return [
         ToolSpec(
@@ -438,10 +454,33 @@ def _specs() -> list[ToolSpec]:
             featured=True,
         ),
         ToolSpec(
+            action="crop.text_regions",
+            title="擷取文字／圖章區域",
+            category="crop",
+            description="從淺色背景偵測文字或圖章區塊，輸出透明 PNG。",
+            params=(
+                ToolParam("input_path", "path", True, description="白底或淺色背景圖片"),
+                ToolParam(
+                    "output_dir",
+                    "folder",
+                    False,
+                    description="留白時在來源旁建立專用資料夾。",
+                    default_hint="圖片旁的 output_regions 資料夾",
+                    source_default_hint="圖片旁的 <原始檔名>_regions 資料夾",
+                ),
+                ToolParam("dilate_iterations", "int", False, 10, "連接鄰近筆畫的膨脹次數"),
+                ToolParam("min_area", "int", False, 64, "忽略面積小於此值的雜點"),
+                ToolParam("padding_ratio", "float", False, 0.1, "區域四周增加的透明邊界比例"),
+                ToolParam("canvas_size", "int", False, 0, "固定正方形畫布邊長；0 表示自動"),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=crop.text_regions,
+        ),
+        ToolSpec(
             action="watermark.text",
             title="加入文字浮水印",
             category="watermark",
-            description="在圖片中央加入可旋轉的半透明文字浮水印。",
+            description="在圖片指定位置加入可旋轉的半透明文字浮水印。",
             params=(
                 ToolParam("input_path", "path", True, description="輸入圖片路徑"),
                 ToolParam(
@@ -457,6 +496,24 @@ def _specs() -> list[ToolSpec]:
                 ToolParam("font_size", "int", False, 0, "字型大小，0 表示自動"),
                 ToolParam("rotation", "float", False, 45, "旋轉角度"),
                 ToolParam("opacity", "int", False, 100, "透明度，0 到 255"),
+                ToolParam(
+                    "position",
+                    "string",
+                    False,
+                    "center",
+                    "使用預設位置，或選擇 custom 後填入座標",
+                    choices=(
+                        "center",
+                        "top_left",
+                        "top_right",
+                        "bottom_left",
+                        "bottom_right",
+                        "custom",
+                    ),
+                ),
+                ToolParam("margin", "int", False, 16, "四角位置與圖片邊界的距離"),
+                ToolParam("position_x", "int", False, 0, "custom 模式的左上角 X 座標"),
+                ToolParam("position_y", "int", False, 0, "custom 模式的左上角 Y 座標"),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
             handler=watermark.add_text,

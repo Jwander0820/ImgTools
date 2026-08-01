@@ -2,10 +2,41 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 
 class WatermarkTests(unittest.TestCase):
+    def test_text_watermark_can_be_placed_at_bottom_right(self):
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "input.png"
+            output_path = Path(tmp) / "output.png"
+            Image.new("RGB", (240, 140), "white").save(input_path)
+
+            result = run_tool(
+                "watermark.text",
+                {
+                    "input_path": str(input_path),
+                    "output_path": str(output_path),
+                    "text": "TEST",
+                    "font_size": 24,
+                    "rotation": 0,
+                    "opacity": 255,
+                    "position": "bottom_right",
+                    "margin": 8,
+                },
+                manifest=False,
+            )
+
+            self.assertTrue(result["ok"], result)
+            with Image.open(input_path) as source, Image.open(output_path) as marked:
+                changed = ImageChops.difference(source.convert("RGB"), marked.convert("RGB"))
+                bounds = changed.getbbox()
+            self.assertIsNotNone(bounds)
+            self.assertGreater(bounds[0], 120)
+            self.assertGreater(bounds[1], 70)
+
     def test_text_watermark_writes_same_size_image(self):
         from imgtools.core.watermark import add_text
 

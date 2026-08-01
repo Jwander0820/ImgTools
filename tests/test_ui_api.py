@@ -75,6 +75,26 @@ class UIAPITests(unittest.TestCase):
         self.assertTrue(result["ok"])
         update.assert_called_once_with(["gif.images_to_gif"])
 
+    def test_api_updates_pdf_default_dpi_without_requiring_pins(self):
+        from imgtools.ui.api import handle_update_preferences
+
+        fake = {
+            "pinned_actions": [],
+            "usage": {},
+            "quick_actions": [],
+            "max_pinned": 8,
+            "pdf_default_dpi": 300,
+        }
+        with patch(
+            "imgtools.ui.api.update_pdf_default_dpi",
+            return_value=fake,
+        ) as update:
+            result = handle_update_preferences({"pdf_default_dpi": 300})
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["pdf_default_dpi"], 300)
+        update.assert_called_once_with(300)
+
     def test_api_pick_validates_mode_and_returns_paths(self):
         from imgtools.ui.api import handle_pick
 

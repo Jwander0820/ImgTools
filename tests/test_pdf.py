@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +19,57 @@ class FakePDFOperator:
 
 
 class PDFTests(unittest.TestCase):
+    def test_pdf_actions_use_server_default_dpi_when_task_omits_it(self):
+        from imgtools.service.preferences import update_pdf_default_dpi
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pdf_path = root / "sample.pdf"
+            output_path = root / "out.png"
+            pdf_path.write_text("fake", encoding="utf-8")
+
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": str(root / "state")}):
+                update_pdf_default_dpi(300)
+                with patch("imgtools.core.pdf.PDFOperator", FakePDFOperator):
+                    result = run_tool(
+                        "pdf.render_page",
+                        {
+                            "pdf_path": str(pdf_path),
+                            "output_path": str(output_path),
+                        },
+                        manifest=False,
+                    )
+
+            self.assertTrue(result["ok"], result)
+            self.assertEqual(output_path.read_text(encoding="utf-8"), "page=0, dpi=300")
+
+    def test_explicit_task_dpi_overrides_the_server_default(self):
+        from imgtools.service.preferences import update_pdf_default_dpi
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pdf_path = root / "sample.pdf"
+            output_path = root / "out.png"
+            pdf_path.write_text("fake", encoding="utf-8")
+
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": str(root / "state")}):
+                update_pdf_default_dpi(300)
+                with patch("imgtools.core.pdf.PDFOperator", FakePDFOperator):
+                    result = run_tool(
+                        "pdf.render_page",
+                        {
+                            "pdf_path": str(pdf_path),
+                            "output_path": str(output_path),
+                            "dpi": 144,
+                        },
+                        manifest=False,
+                    )
+
+            self.assertTrue(result["ok"], result)
+            self.assertEqual(output_path.read_text(encoding="utf-8"), "page=0, dpi=144")
+
     def test_pdf_render_page_uses_one_based_page_number(self):
         from imgtools.core.pdf import render_page
 

@@ -21,7 +21,9 @@ class PreferenceTests(unittest.TestCase):
         self.assertIn("/data/.imgtools/", (root / ".gitignore").read_text(encoding="utf-8"))
         example = root / "examples" / "preferences.example.json"
         self.assertTrue(example.is_file())
-        self.assertEqual(json.loads(example.read_text(encoding="utf-8"))["version"], 1)
+        data = json.loads(example.read_text(encoding="utf-8"))
+        self.assertEqual(data["version"], 2)
+        self.assertEqual(data["settings"]["pdf_default_dpi"], 192)
 
     def test_missing_file_uses_registry_defaults_without_creating_state(self):
         from imgtools.service.preferences import get_preferences_view
@@ -81,9 +83,59 @@ class PreferenceTests(unittest.TestCase):
             path = Path(tmp) / "preferences.json"
             self.assertTrue(path.is_file())
             data = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(data["version"], 1)
+            self.assertEqual(data["version"], 2)
             self.assertEqual(data["pinned_actions"], ["tool.pinned"])
             self.assertEqual(data["usage"], {})
+            self.assertEqual(data["settings"]["pdf_default_dpi"], 192)
+
+    def test_pdf_default_dpi_is_persisted_without_resetting_pins(self):
+        from imgtools.service.preferences import (
+            update_pdf_default_dpi,
+            update_pinned_actions,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": tmp}):
+                update_pinned_actions(["tool.pinned"], TOOLS)
+                result = update_pdf_default_dpi(300, TOOLS)
+
+            data = json.loads((Path(tmp) / "preferences.json").read_text(encoding="utf-8"))
+            self.assertEqual(result["pdf_default_dpi"], 300)
+            self.assertEqual(data["settings"]["pdf_default_dpi"], 300)
+            self.assertEqual(data["pinned_actions"], ["tool.pinned"])
+
+    def test_legacy_preferences_gain_the_pdf_default_without_losing_data(self):
+        from imgtools.service.preferences import get_preferences_view, update_pdf_default_dpi
+
+        with tempfile.TemporaryDirectory() as tmp:
+            state_path = Path(tmp) / "preferences.json"
+            state_path.write_text(
+                json.dumps({
+                    "version": 1,
+                    "pinned_actions": ["tool.pinned"],
+                    "usage": {"tool.other": {"successful_runs": 2}},
+                }),
+                encoding="utf-8",
+            )
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": tmp}):
+                before = get_preferences_view(TOOLS)
+                update_pdf_default_dpi(240, TOOLS)
+
+            data = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertEqual(before["pdf_default_dpi"], 192)
+            self.assertEqual(data["version"], 2)
+            self.assertEqual(data["pinned_actions"], ["tool.pinned"])
+            self.assertEqual(data["usage"]["tool.other"]["successful_runs"], 2)
+            self.assertEqual(data["settings"]["pdf_default_dpi"], 240)
+
+    def test_invalid_pdf_default_dpi_is_rejected(self):
+        from imgtools.service.preferences import PreferenceValidationError, update_pdf_default_dpi
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": tmp}):
+                for value in (True, 192.5, "not-a-number", 35, 1201):
+                    with self.subTest(value=value), self.assertRaises(PreferenceValidationError):
+                        update_pdf_default_dpi(value, TOOLS)
 
     def test_unknown_or_too_many_pins_are_rejected(self):
         from imgtools.service.preferences import PreferenceValidationError, update_pinned_actions

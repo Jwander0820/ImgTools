@@ -21,6 +21,10 @@ def run_tool(action: str, raw_params: Any, *, manifest: bool = True) -> dict[str
             raise ToolValidationError("params must be an object")
         params = dict(raw_params)
         spec = get_tool(action)
+        if any(param.name == "dpi" for param in spec.params) and _is_empty(params.get("dpi")):
+            from .preferences import get_pdf_default_dpi
+
+            params["dpi"] = get_pdf_default_dpi()
         params = _prepare_params(spec.params, params)
         params = default_params_for_safety(spec, params)
         result = spec.handler(params)

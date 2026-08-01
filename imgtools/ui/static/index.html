@@ -92,6 +92,17 @@
               </div>
               <code id="tool-action">—</code>
             </div>
+            <div id="pdf-default-setting" class="pdf-preference" hidden>
+              <div>
+                <strong>PDF 預設解析度</strong>
+                <small>只套用到沒有另行指定 DPI 的 PDF 任務，保存在這台電腦。</small>
+              </div>
+              <label for="pdf-default-dpi">
+                <span>預設 DPI</span>
+                <input id="pdf-default-dpi" type="number" min="36" max="1200" step="1" value="192" aria-describedby="pdf-dpi-status">
+              </label>
+              <span id="pdf-dpi-status" class="sr-status" role="status"></span>
+            </div>
             <form id="form" class="tool-form"></form>
           </section>
 

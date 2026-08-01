@@ -22,7 +22,9 @@ let selected = null;
 let activeCategory = 'all';
 let searchTerm = '';
 let outputNaming = loadOutputNaming();
-let preferences = { pinned_actions: [], usage: {}, quick_actions: [], max_pinned: 8 };
+let preferences = {
+  pinned_actions: [], usage: {}, quick_actions: [], max_pinned: 8, pdf_default_dpi: 192,
+};
 const formState = {};
 
 const $ = (id) => document.getElementById(id);
@@ -32,6 +34,7 @@ async function boot() {
     button.addEventListener('click', () => setOutputNaming(button.dataset.outputNaming));
   });
   renderOutputNaming();
+  $('pdf-default-dpi').addEventListener('change', savePdfDefaultDpi);
   $('quick-settings').addEventListener('click', toggleQuickEditor);
   $('tool-search').addEventListener('input', (event) => {
     searchTerm = event.target.value.trim().toLocaleLowerCase();
@@ -76,8 +79,56 @@ async function refreshPreferences() {
           action: tool.action, source: 'default', successful_runs: 0,
         })),
         max_pinned: 8,
+        pdf_default_dpi: 192,
       };
     }
+  }
+  syncPdfDefaultDpi();
+}
+
+function syncPdfDefaultDpi() {
+  const dpi = Number(preferences.pdf_default_dpi) || 192;
+  $('pdf-default-dpi').value = String(dpi);
+  tools.filter((tool) => tool.category === 'pdf').forEach((tool) => {
+    const dpiParam = tool.params.find((param) => param.name === 'dpi');
+    if (dpiParam) dpiParam.default = dpi;
+  });
+}
+
+async function savePdfDefaultDpi(event) {
+  const input = event.currentTarget;
+  const previous = Number(preferences.pdf_default_dpi) || 192;
+  const next = Number(input.value);
+  if (!Number.isInteger(next) || next < 36 || next > 1200) {
+    input.value = String(previous);
+    $('pdf-dpi-status').textContent = 'PDF 預設 DPI 必須是 36 到 1200 的整數。';
+    return;
+  }
+  input.disabled = true;
+  $('pdf-dpi-status').textContent = '正在保存 PDF 預設 DPI。';
+  try {
+    const response = await fetch('/api/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pdf_default_dpi: next }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.message || '無法保存 PDF 預設 DPI');
+    preferences = data;
+    syncPdfDefaultDpi();
+    const dpiField = selected?.category === 'pdf' ? $('param_dpi') : null;
+    if (dpiField && Number(dpiField.value) === previous) dpiField.value = String(next);
+    Object.keys(formState).forEach((action) => {
+      if (action.startsWith('pdf.') && Number(formState[action].dpi) === previous) {
+        formState[action].dpi = String(next);
+      }
+    });
+    $('pdf-dpi-status').textContent = `PDF 預設 DPI 已保存為 ${next}。`;
+  } catch (error) {
+    input.value = String(previous);
+    $('pdf-dpi-status').textContent = `保存 PDF 預設 DPI 失敗：${error.message}`;
+  } finally {
+    input.disabled = false;
   }
 }
 
@@ -250,6 +301,7 @@ function selectTool(tool, shouldScroll) {
 function renderForm() {
   const form = $('form');
   if (!selected) {
+    $('pdf-default-setting').hidden = true;
     form.replaceChildren();
     return;
   }
@@ -258,6 +310,7 @@ function renderForm() {
   $('tool-title').textContent = selected.title;
   $('tool-description').textContent = selected.description;
   $('tool-action').textContent = selected.action;
+  $('pdf-default-setting').hidden = selected.category !== 'pdf';
   const dangerBadge = $('danger-badge');
   dangerBadge.textContent = selected.danger_level === 'high' ? '會變更檔案' : '';
   dangerBadge.className = selected.danger_level || '';

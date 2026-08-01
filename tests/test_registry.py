@@ -22,7 +22,28 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("video.extract_frames", actions)
         self.assertIn("gif.mp4_to_gif", actions)
         self.assertIn("gif.gif_to_mp4", actions)
+        self.assertIn("crop.text_regions", actions)
         self.assertIn("watermark.text", actions)
+
+    def test_crop_and_watermark_expose_their_advanced_controls(self):
+        from imgtools.service.registry import get_tool
+
+        crop_params = {param.name: param for param in get_tool("crop.text_regions").params}
+        self.assertEqual(
+            {"dilate_iterations", "min_area", "padding_ratio", "canvas_size"},
+            set(crop_params) & {
+                "dilate_iterations",
+                "min_area",
+                "padding_ratio",
+                "canvas_size",
+            },
+        )
+
+        watermark_params = {param.name: param for param in get_tool("watermark.text").params}
+        self.assertEqual(watermark_params["position"].default, "center")
+        self.assertIn("custom", watermark_params["position"].choices)
+        self.assertIn("position_x", watermark_params)
+        self.assertIn("position_y", watermark_params)
 
     def test_get_tool_unknown_action_raises_error(self):
         from imgtools.service.registry import get_tool

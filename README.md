@@ -17,7 +17,8 @@
 - 多頁 TIF 拆頁與指定頁抽出。
 - 圖片序列轉 GIF。
 - MP4 拆幀、MP4 轉 GIF、GIF 轉 MP4。
-- 文字浮水印。
+- 白底文字／圖章區域擷取，輸出透明 PNG。
+- 可置中、四角或自訂座標的文字浮水印。
 
 UI 會依 action registry 自動產生參數表單；輸出檔預設不覆寫。
 
@@ -32,6 +33,8 @@ UI 會依 action registry 自動產生參數表單；輸出檔預設不覆寫。
 只有成功執行工具才會累積次數；單純瀏覽或開啟工具不會記錄。快速入口會標示「已釘選」、「常用」或「預設」，方便確認每個項目的來源。
 
 釘選與使用次數保存在 Server 本機狀態檔 `data/.imgtools/preferences.json`，不依賴瀏覽器儲存，因此更新前端或更換瀏覽器後仍會保留。這個實際檔案已由 `.gitignore` 排除，不會提交或上傳；可提交的結構範例放在 `examples/preferences.example.json`。若希望將狀態放在版本目錄以外，可用 `IMGTOOLS_STATE_DIR` 指定固定的本機資料夾。
+
+PDF 單頁與全頁工具頁內的「PDF 預設 DPI」也保存在同一份 Server 偏好檔，套用到未明確填寫 DPI 的 PDF 任務；任務自行指定的 DPI 仍有最高優先權。這項設定只在 PDF 工具頁顯示，重構後的 UI、API 與 runner 不再讀取 `legacy/pdf_tools/config.json`。
 
 上方橫軸的「預設檔名」是所有工具共用設定，並保存在目前瀏覽器：
 

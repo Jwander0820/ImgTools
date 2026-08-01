@@ -10,8 +10,11 @@ from .registry import list_tools
 from .state import state_root
 
 
-PREFERENCES_VERSION = 1
+PREFERENCES_VERSION = 2
 MAX_PINNED_ACTIONS = 8
+DEFAULT_PDF_DPI = 192
+MIN_PDF_DPI = 36
+MAX_PDF_DPI = 1200
 _WRITE_LOCK = threading.Lock()
 
 
@@ -74,6 +77,7 @@ def get_preferences_view(tools: list[dict[str, Any]] | None = None) -> dict[str,
         },
         "quick_actions": quick_actions,
         "max_pinned": MAX_PINNED_ACTIONS,
+        "pdf_default_dpi": _pdf_default_dpi(data.get("settings", {})),
     }
 
 
@@ -114,6 +118,22 @@ def record_successful_run(action: str) -> None:
         _write_preferences(data)
 
 
+def update_pdf_default_dpi(
+    value: Any,
+    tools: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    dpi = _validate_pdf_default_dpi(value)
+    with _WRITE_LOCK:
+        data = _read_preferences()
+        data["settings"]["pdf_default_dpi"] = dpi
+        _write_preferences(data)
+    return get_preferences_view(tools)
+
+
+def get_pdf_default_dpi() -> int:
+    return _pdf_default_dpi(_read_preferences().get("settings", {}))
+
+
 def preferences_path() -> Path:
     return state_root() / "preferences.json"
 
@@ -130,10 +150,14 @@ def _read_preferences() -> dict[str, Any]:
         return _empty_preferences()
     pinned = raw.get("pinned_actions", [])
     usage = raw.get("usage", {})
+    settings = raw.get("settings", {})
     return {
         "version": PREFERENCES_VERSION,
         "pinned_actions": pinned if isinstance(pinned, list) else [],
         "usage": usage if isinstance(usage, dict) else {},
+        "settings": {
+            "pdf_default_dpi": _pdf_default_dpi(settings),
+        },
     }
 
 
@@ -149,7 +173,35 @@ def _write_preferences(data: dict[str, Any]) -> None:
 
 
 def _empty_preferences() -> dict[str, Any]:
-    return {"version": PREFERENCES_VERSION, "pinned_actions": [], "usage": {}}
+    return {
+        "version": PREFERENCES_VERSION,
+        "pinned_actions": [],
+        "usage": {},
+        "settings": {"pdf_default_dpi": DEFAULT_PDF_DPI},
+    }
+
+
+def _validate_pdf_default_dpi(value: Any) -> int:
+    if isinstance(value, (bool, float)):
+        raise PreferenceValidationError("pdf_default_dpi must be an integer")
+    try:
+        dpi = int(value)
+    except (TypeError, ValueError) as exc:
+        raise PreferenceValidationError("pdf_default_dpi must be an integer") from exc
+    if not MIN_PDF_DPI <= dpi <= MAX_PDF_DPI:
+        raise PreferenceValidationError(
+            f"pdf_default_dpi must be between {MIN_PDF_DPI} and {MAX_PDF_DPI}"
+        )
+    return dpi
+
+
+def _pdf_default_dpi(settings: Any) -> int:
+    if not isinstance(settings, dict):
+        return DEFAULT_PDF_DPI
+    try:
+        return _validate_pdf_default_dpi(settings.get("pdf_default_dpi", DEFAULT_PDF_DPI))
+    except PreferenceValidationError:
+        return DEFAULT_PDF_DPI
 
 
 def _successful_runs(item: Any) -> int:
