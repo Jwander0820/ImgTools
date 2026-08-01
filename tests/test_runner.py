@@ -7,6 +7,50 @@ from unittest.mock import patch
 
 
 class RunnerTests(unittest.TestCase):
+    def test_run_tool_accepts_windows_copy_as_path_quotes(self):
+        from PIL import Image
+
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "source.tif"
+            output_path = Path(tmp) / "extracted.tif"
+            Image.new("RGB", (2, 2), "white").save(input_path)
+
+            result = run_tool(
+                "tif.extract_page",
+                {
+                    "input_path": f'"{input_path}"',
+                    "output_path": f'"{output_path}"',
+                },
+                manifest=False,
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertTrue(output_path.is_file())
+            self.assertEqual(result["outputs"]["files"], [str(output_path.resolve())])
+
+    def test_run_tool_accepts_quoted_paths_in_multiline_path_input(self):
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            first_path = Path(tmp) / "first.png"
+            second_path = Path(tmp) / "second.png"
+            copied_paths = f'"{first_path}"\n"{second_path}"'
+
+            result = run_tool(
+                "merge.panorama_translation",
+                {"input_paths": copied_paths},
+                manifest=False,
+            )
+
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["error_code"], "FileNotFoundError")
+            self.assertEqual(
+                result["message"],
+                f"Input image does not exist: {first_path.resolve()}",
+            )
+
     def test_prepare_params_preserves_valid_global_output_naming(self):
         from imgtools.service.registry import ToolParam
         from imgtools.service.runner import _prepare_params

@@ -53,6 +53,15 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("preference.source", script)
         self.assertIn("pinned_actions", script)
 
+    def test_frontend_normalizes_all_local_path_param_types(self):
+        from imgtools.ui.server import STATIC_DIR
+
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+
+        self.assertIn("function normalizeLocalPath(value)", script)
+        self.assertIn(".map(normalizeLocalPath)", script)
+        self.assertIn("['path', 'folder'].includes(param.type)", script)
+
     def test_http_server_returns_static_assets(self):
         from imgtools.ui.server import create_server
 

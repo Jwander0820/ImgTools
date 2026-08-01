@@ -85,11 +85,19 @@ def _coerce(param: ToolParam, value: Any) -> Any:
         if isinstance(value, bool):
             return value
         return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+    if param.type in {"path", "folder"}:
+        return _normalize_path_value(value)
     if param.type == "path_list":
-        if isinstance(value, (list, tuple)):
-            return [str(item).strip() for item in value if str(item).strip()]
-        return [line.strip() for line in str(value).splitlines() if line.strip()]
+        items = value if isinstance(value, (list, tuple)) else str(value).splitlines()
+        return [path for item in items if (path := _normalize_path_value(item))]
     return str(value)
+
+
+def _normalize_path_value(value: Any) -> str:
+    path = str(value).strip()
+    if len(path) >= 2 and path.startswith('"') and path.endswith('"'):
+        return path[1:-1]
+    return path
 
 
 def _is_empty(value: Any) -> bool:

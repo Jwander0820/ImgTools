@@ -457,6 +457,14 @@ function booleanHint(name) {
   return '';
 }
 
+function normalizeLocalPath(value) {
+  const path = String(value).trim();
+  if (path.length >= 2 && path.startsWith('"') && path.endsWith('"')) {
+    return path.slice(1, -1);
+  }
+  return path;
+}
+
 function readFormValues(includeEmpty = false) {
   const output = { output_naming: outputNaming };
   if (!selected) return output;
@@ -465,8 +473,11 @@ function readFormValues(includeEmpty = false) {
     if (!element) return;
     if (param.type === 'bool') output[param.name] = element.checked;
     else if (param.type === 'path_list') {
-      const values = element.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+      const values = element.value.split(/\r?\n/).map(normalizeLocalPath).filter(Boolean);
       if (includeEmpty || values.length) output[param.name] = values;
+    } else if (['path', 'folder'].includes(param.type)) {
+      const value = normalizeLocalPath(element.value);
+      if (includeEmpty || value !== '') output[param.name] = value;
     } else if (includeEmpty || element.value !== '') output[param.name] = element.value;
   });
   return output;
