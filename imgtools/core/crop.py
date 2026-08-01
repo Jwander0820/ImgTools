@@ -101,7 +101,7 @@ def text_regions(params: dict[str, Any]) -> dict[str, Any]:
         offset_x = (canvas_width - width) // 2
         offset_y = (canvas_height - height) // 2
         canvas[offset_y:offset_y + height, offset_x:offset_x + width] = region
-        Image.fromarray(canvas, "RGBA").save(output_path)
+        Image.fromarray(canvas).save(output_path)
 
     return {
         "ok": True,

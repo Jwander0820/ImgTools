@@ -1,9 +1,8 @@
 import tempfile
 import unittest
-import sys
-from types import ModuleType
 from pathlib import Path
-from unittest.mock import patch
+
+from PIL import Image
 
 
 class OutputDefaultTests(unittest.TestCase):
@@ -58,15 +57,8 @@ class OutputDefaultTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp) / "images"
             folder.mkdir()
-
-            def fake_merge(_folder_path, output_path):
-                Path(output_path).write_bytes(b"pdf")
-                return output_path
-
-            fake_module = ModuleType("legacy.merge_img")
-            fake_module.merge_img_to_one_pdf = fake_merge
-            with patch.dict(sys.modules, {"legacy.merge_img": fake_module}):
-                result = images_to_pdf({"folder_path": str(folder)})
+            Image.new("RGB", (2, 2), "white").save(folder / "page.png")
+            result = images_to_pdf({"folder_path": str(folder)})
 
             self.assertEqual(Path(result["outputs"]["files"][0]), folder / "output.pdf")
             self.assertTrue((folder / "output.pdf").is_file())
@@ -77,15 +69,8 @@ class OutputDefaultTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp) / "holiday"
             folder.mkdir()
-
-            def fake_merge(_folder_path, output_path):
-                Path(output_path).write_bytes(b"pdf")
-                return output_path
-
-            fake_module = ModuleType("legacy.merge_img")
-            fake_module.merge_img_to_one_pdf = fake_merge
-            with patch.dict(sys.modules, {"legacy.merge_img": fake_module}):
-                result = images_to_pdf({"folder_path": str(folder), "output_naming": "source"})
+            Image.new("RGB", (2, 2), "white").save(folder / "page.png")
+            result = images_to_pdf({"folder_path": str(folder), "output_naming": "source"})
 
             self.assertEqual(Path(result["outputs"]["files"][0]), folder / "holiday.pdf")
 

@@ -1,7 +1,7 @@
 {
   "action": "metadata.read_tif_tags",
   "params": {
-    "input_path": "D:/Tools/ImgTools/legacy/read_img_exif/test.tif",
+    "input_path": "D:/Tools/ImgTools/tests/fixtures/merge_img/0_width.tif",
     "method": "pil"
   }
 }

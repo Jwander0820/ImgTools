@@ -1,14 +1,8 @@
-﻿# ImgTools runtime dependencies
-# Target: Python 3.14+
-
+# ImgTools runtime dependencies (Python 3.14+)
 Pillow>=11.3,<12
 numpy>=2.4,<3
 opencv-python>=4.13,<5
-
 PyMuPDF>=1.27,<2
 tifftools>=1.7,<2
 exifread>=3,<4
-
-moviepy>=2.2,<3
-imageio>=2.37,<3
 imageio-ffmpeg>=0.6,<0.7

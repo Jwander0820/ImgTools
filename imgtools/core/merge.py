@@ -25,7 +25,7 @@ class InsufficientOverlapError(ValueError):
 
 
 def images_to_pdf(params: dict[str, Any]) -> dict[str, Any]:
-    from legacy.merge_img import merge_img_to_one_pdf
+    from PIL import Image
 
     folder_path = Path(str(params["folder_path"])).expanduser().resolve()
     if not folder_path.is_dir():
@@ -37,10 +37,26 @@ def images_to_pdf(params: dict[str, Any]) -> dict[str, Any]:
         folder_path / default_name,
         overwrite=overwrite,
     )
-    result = merge_img_to_one_pdf(str(folder_path), str(output_path))
+    image_paths = sorted(
+        path
+        for path in folder_path.iterdir()
+        if path.is_file() and path.suffix.lower() in {".tif", ".tiff", ".png", ".jpg", ".jpeg"}
+    )
+    if not image_paths:
+        raise ValueError(f"No supported images found in: {folder_path}")
+
+    images = []
+    try:
+        for image_path in image_paths:
+            with Image.open(image_path) as source:
+                images.append(source.convert("RGB"))
+        images[0].save(output_path, "PDF", save_all=True, append_images=images[1:])
+    finally:
+        for image in images:
+            image.close()
     return {
         "ok": True,
-        "outputs": {"files": [abs_path(result)]},
+        "outputs": {"files": [abs_path(output_path)]},
         "warnings": [],
     }
 
