@@ -1,0 +1,11 @@
+{
+  "action": "merge.stack_vertical",
+  "params": {
+    "input_paths": [
+      "D:/input/comparison_top.png",
+      "D:/input/comparison_bottom.png"
+    ],
+    "output_path": "D:/output/comparison.png",
+    "overwrite": false
+  }
+}

@@ -58,6 +58,15 @@ def _prepare_params(spec_params: tuple[ToolParam, ...], raw_params: dict[str, An
         if _is_empty(value) and param.default is None:
             continue
         value = _coerce(param, value)
+        if param.type == "path_list":
+            if param.min_items is not None and len(value) < param.min_items:
+                raise ToolValidationError(
+                    f"{param.name} must contain at least {param.min_items} items"
+                )
+            if param.max_items is not None and len(value) > param.max_items:
+                raise ToolValidationError(
+                    f"{param.name} must contain at most {param.max_items} items"
+                )
         if param.choices and value not in param.choices:
             choices = ", ".join(param.choices)
             raise ToolValidationError(f"{param.name} must be one of: {choices}")

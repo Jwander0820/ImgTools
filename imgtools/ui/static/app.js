@@ -348,6 +348,9 @@ function renderForm() {
   form.replaceChildren(...nodes);
   form.onsubmit = runTool;
   $('copy-task').onclick = copyTask;
+  selected.params
+    .filter((param) => param.type === 'path_list')
+    .forEach((param) => renderPathOrder(`param_${param.name}`, param));
 }
 
 function outputNamingNote() {
@@ -395,15 +398,95 @@ function renderField(param) {
   }
 
   const canPick = ['path', 'folder', 'path_list'].includes(param.type);
-  const controlMarkup = canPick
-    ? `<div class="path-control">${control}<button class="pick-button" type="button" data-pick-for="${id}">
+  let controlMarkup = control;
+  if (param.type === 'path_list') {
+    controlMarkup = `<div class="ordered-path-list"><div class="path-control">${control}<button class="pick-button" type="button" data-pick-for="${id}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v10H3zM3 7V5h7l2 2"/></svg><span>選擇圖片</span></button></div>
+        <div class="path-order" id="${id}_order" aria-live="polite"></div></div>`;
+  } else if (canPick) {
+    controlMarkup = `<div class="path-control">${control}<button class="pick-button" type="button" data-pick-for="${id}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v10H3zM3 7V5h7l2 2"/></svg><span>選擇</span></button></div>`
-    : control;
+  }
   block.innerHTML = `${label}${controlMarkup}<div class="hint-row"><span class="hint">${escapeHtml(param.description || '')}</span>${defaultHint}</div>`;
   if (canPick) {
     block.querySelector('.pick-button').addEventListener('click', (event) => openPicker(param, event.currentTarget));
   }
+  if (param.type === 'path_list') {
+    const textarea = block.querySelector('textarea');
+    textarea.addEventListener('input', () => renderPathOrder(id, param));
+    renderPathOrder(id, param);
+  }
   return block;
+}
+
+function pathItems(id) {
+  const element = $(id);
+  if (!element) return [];
+  return element.value.split(/\r?\n/).map(normalizeLocalPath).filter(Boolean);
+}
+
+function setPathItems(id, items, param) {
+  const element = $(id);
+  element.value = items.join('\n');
+  element.dispatchEvent(new Event('change', { bubbles: true }));
+  renderPathOrder(id, param);
+}
+
+function movePathItem(id, index, direction, param) {
+  const items = pathItems(id);
+  const target = index + direction;
+  if (target < 0 || target >= items.length) return;
+  [items[index], items[target]] = [items[target], items[index]];
+  setPathItems(id, items, param);
+}
+
+function removePathItem(id, index, param) {
+  const items = pathItems(id);
+  items.splice(index, 1);
+  setPathItems(id, items, param);
+}
+
+function renderPathOrder(id, param) {
+  const container = $(`${id}_order`);
+  if (!container) return;
+  const items = pathItems(id);
+  const min = param.min_items ?? 1;
+  const max = param.max_items ?? null;
+  const valid = items.length >= min && (max === null || items.length <= max);
+  const limit = max === null ? `${items.length} 張` : `${items.length} / ${max} 張`;
+
+  const heading = document.createElement('div');
+  heading.className = `path-order-heading${valid ? '' : ' invalid'}`;
+  heading.innerHTML = `<strong>由上到下的疊圖順序</strong><span>${escapeHtml(limit)}</span>`;
+  if (!items.length) {
+    const empty = document.createElement('p');
+    empty.className = 'path-order-empty';
+    empty.textContent = `選擇 ${min}${max ? `～${max}` : ' 張以上'}張圖片後，可在這裡調整順序。`;
+    container.replaceChildren(heading, empty);
+    return;
+  }
+
+  const list = document.createElement('ol');
+  list.className = 'path-order-list';
+  items.forEach((path, index) => {
+    const item = document.createElement('li');
+    const filename = path.split(/[\\/]/).pop() || path;
+    item.className = 'path-order-item';
+    item.innerHTML = `
+      <span class="path-order-index">${index + 1}</span>
+      <span class="path-order-copy"><strong>${escapeHtml(filename)}</strong><small>${escapeHtml(path)}</small></span>
+      <span class="path-order-actions">
+        <button type="button" data-move="-1" aria-label="將第 ${index + 1} 張上移" ${index === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" data-move="1" aria-label="將第 ${index + 1} 張下移" ${index === items.length - 1 ? 'disabled' : ''}>↓</button>
+        <button type="button" data-remove aria-label="移除第 ${index + 1} 張">×</button>
+      </span>`;
+    item.querySelectorAll('[data-move]').forEach((button) => {
+      button.addEventListener('click', () => movePathItem(id, index, Number(button.dataset.move), param));
+    });
+    item.querySelector('[data-remove]').addEventListener('click', () => removePathItem(id, index, param));
+    list.appendChild(item);
+  });
+  container.replaceChildren(heading, list);
 }
 
 function pickerMode(param) {
@@ -428,7 +511,7 @@ async function openPicker(param, button) {
     if (!data.paths || !data.paths.length) return;
     const element = $(`param_${param.name}`);
     element.value = param.type === 'path_list' ? data.paths.join('\n') : data.paths[0];
-    element.dispatchEvent(new Event('change', { bubbles: true }));
+    element.dispatchEvent(new Event(param.type === 'path_list' ? 'input' : 'change', { bubbles: true }));
   } catch (error) {
     renderTransientMessage('無法選擇路徑', `${error.message}。仍可直接貼上完整路徑。`, true);
     setStatus('選擇器失敗', false);

@@ -87,6 +87,8 @@ class ToolParam:
     advanced: bool = False
     default_hint: str = ""
     source_default_hint: str = ""
+    min_items: int | None = None
+    max_items: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -105,6 +107,10 @@ class ToolParam:
             data["default_hint"] = self.default_hint
         if self.source_default_hint:
             data["source_default_hint"] = self.source_default_hint
+        if self.min_items is not None:
+            data["min_items"] = self.min_items
+        if self.max_items is not None:
+            data["max_items"] = self.max_items
         return data
 
 
@@ -279,6 +285,33 @@ def _specs() -> list[ToolSpec]:
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
             handler=tif.images_to_tif,
+            featured=True,
+        ),
+        ToolSpec(
+            action="merge.stack_vertical",
+            title="快速直向疊圖",
+            category="merge",
+            description="將 2～4 張同寬圖片依指定順序由上到下疊成一張 PNG，不縮放原圖。",
+            params=(
+                ToolParam(
+                    "input_paths",
+                    "path_list",
+                    True,
+                    description="依由上到下的順序選擇 2～4 張同寬圖片",
+                    min_items=2,
+                    max_items=4,
+                ),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到第一張圖片旁；既有檔案會自動加上編號。",
+                    default_hint="第一張圖片旁的 output.png",
+                    source_default_hint="第一張圖片旁的 <第一張檔名>.png",
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=merge.stack_vertical,
             featured=True,
         ),
         ToolSpec(

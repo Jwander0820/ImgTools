@@ -87,6 +87,17 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(params["input_paths"], ["a.png", "b.png"])
         self.assertEqual(params["ignore_bottom_ratio"], 0.2)
 
+    def test_prepare_params_enforces_path_list_item_limits(self):
+        from imgtools.service.registry import ToolParam
+        from imgtools.service.runner import ToolValidationError, _prepare_params
+
+        spec = (ToolParam("input_paths", "path_list", True, min_items=2, max_items=4),)
+
+        with self.assertRaisesRegex(ToolValidationError, "at least 2"):
+            _prepare_params(spec, {"input_paths": ["one.png"]})
+        with self.assertRaisesRegex(ToolValidationError, "at most 4"):
+            _prepare_params(spec, {"input_paths": [f"{index}.png" for index in range(5)]})
+
     def test_panorama_error_code_is_preserved(self):
         from imgtools.service.runner import run_tool
 

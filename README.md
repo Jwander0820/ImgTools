@@ -9,12 +9,14 @@ ImgTools 是一套完全在本機執行的影像工作台。所有功能共用�
 | Metadata | `metadata.read_tif_tags` |
 | Rename | `rename.files_replace`、`rename.folders_replace` |
 | PDF | `pdf.render_page`、`pdf.render_all_pages` |
-| Merge | `merge.images_to_pdf`、`merge.images_to_tif`、`merge.panorama_translation` |
+| Merge | `merge.stack_vertical`、`merge.images_to_pdf`、`merge.images_to_tif`、`merge.panorama_translation` |
 | TIF | `tif.split_pages`、`tif.extract_page` |
 | GIF / Video | `gif.images_to_gif`、`video.extract_frames`、`gif.mp4_to_gif`、`gif.gif_to_mp4` |
 | Image | `crop.text_regions`、`watermark.text` |
 
-目前共有 16 個 actions。以 `python -m imgtools list` 取得 registry 的即時完整清單與參數定義。
+目前共有 17 個 actions。以 `python -m imgtools list` 取得 registry 的即時完整清單與參數定義。
+
+`merge.stack_vertical` 是快速上下對比工具：選擇 2～4 張同寬圖片後，可在 UI 依「由上到下」調整順序，再輸出一張不縮放、不加間距的 PNG。例如兩張 1920×1080 會輸出為 1920×2160。
 
 ## 安裝
 

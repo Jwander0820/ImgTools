@@ -105,7 +105,7 @@ result = run_tool(
 - `danger_level`：目前 rename 為高風險，runner 會套用安全預設。
 - `featured`：沒有使用者偏好時的預設快速工具。
 
-支援的參數型別為 `string`、`int`、`float`、`bool`、`path`、`folder`、`path_list`。路徑會移除 Windows 複製時包住整段路徑的雙引號。
+支援的參數型別為 `string`、`int`、`float`、`bool`、`path`、`folder`、`path_list`。路徑會移除 Windows 複製時包住整段路徑的雙引號；`path_list` 可透過 `min_items`、`max_items` 宣告數量限制，runner 與 UI 會共用這份 metadata。
 
 Core handler 的 interface：
 

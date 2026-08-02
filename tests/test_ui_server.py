@@ -52,6 +52,10 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("'/api/preferences'", script)
         self.assertIn("preference.source", script)
         self.assertIn("pinned_actions", script)
+        self.assertIn("ordered-path-list", script)
+        self.assertIn("movePathItem", script)
+        self.assertIn("removePathItem", script)
+        self.assertIn(".forEach((param) => renderPathOrder", script)
 
     def test_frontend_normalizes_all_local_path_param_types(self):
         from imgtools.ui.server import STATIC_DIR

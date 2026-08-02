@@ -14,6 +14,7 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("pdf.render_page", actions)
         self.assertIn("pdf.render_all_pages", actions)
         self.assertIn("merge.images_to_pdf", actions)
+        self.assertIn("merge.stack_vertical", actions)
         self.assertIn("merge.panorama_translation", actions)
         self.assertIn("tif.split_pages", actions)
         self.assertIn("tif.extract_page", actions)
@@ -61,6 +62,17 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("crop_subtitles", params)
         self.assertTrue(params["crop_subtitles"].default)
         self.assertEqual(params["subtitle_crop_ratio"].default, 0.08)
+
+    def test_vertical_stack_exposes_ordered_two_to_four_image_contract(self):
+        from imgtools.service.registry import get_tool
+
+        tool = get_tool("merge.stack_vertical")
+        params = {param["name"]: param for param in tool.to_dict()["params"]}
+
+        self.assertTrue(tool.featured)
+        self.assertEqual(params["input_paths"]["min_items"], 2)
+        self.assertEqual(params["input_paths"]["max_items"], 4)
+        self.assertIn("由上到下", params["input_paths"]["description"])
 
     def test_registry_exposes_quick_actions_and_progressive_fields(self):
         from imgtools.service.registry import get_tool, list_tools

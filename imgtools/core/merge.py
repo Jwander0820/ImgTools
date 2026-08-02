@@ -61,6 +61,72 @@ def images_to_pdf(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def stack_vertical(params: dict[str, Any]) -> dict[str, Any]:
+    from PIL import Image, ImageOps
+
+    raw_paths = params.get("input_paths")
+    if not isinstance(raw_paths, (list, tuple)) or not 2 <= len(raw_paths) <= 4:
+        raise ValueError("input_paths must contain 2 to 4 image paths")
+
+    paths = [Path(str(path)).expanduser().resolve() for path in raw_paths]
+    images = []
+    try:
+        for path in paths:
+            if not path.is_file():
+                raise FileNotFoundError(f"Input image does not exist: {path}")
+            with Image.open(path) as source:
+                images.append(ImageOps.exif_transpose(source).copy())
+
+        widths = {image.width for image in images}
+        if len(widths) != 1:
+            raise ValueError("All input images must have the same width; images are not resized")
+
+        has_alpha = any("A" in image.getbands() or "transparency" in image.info for image in images)
+        mode = "RGBA" if has_alpha else "RGB"
+        converted = [image.convert(mode) for image in images]
+        try:
+            width = converted[0].width
+            height = sum(image.height for image in converted)
+            canvas = Image.new(mode, (width, height), (0, 0, 0, 0) if has_alpha else "black")
+            top = 0
+            for image in converted:
+                canvas.paste(image, (0, top))
+                top += image.height
+
+            default_name = f"{default_output_stem(params, paths[0])}.png"
+            requested_output = params.get("output_path")
+            if requested_output and Path(str(requested_output)).suffix.lower() != ".png":
+                raise ValueError("output_path must end in .png")
+            output_path = resolve_output_path(
+                requested_output,
+                paths[0].parent / default_name,
+                overwrite=bool(params.get("overwrite", False)),
+                protected_paths=tuple(paths),
+            )
+            try:
+                canvas.save(output_path, "PNG")
+            finally:
+                canvas.close()
+        finally:
+            for image in converted:
+                image.close()
+    finally:
+        for image in images:
+            image.close()
+
+    return {
+        "ok": True,
+        "outputs": {
+            "files": [abs_path(output_path)],
+            "source_files": [abs_path(path) for path in paths],
+            "image_count": len(paths),
+            "width": width,
+            "height": height,
+        },
+        "warnings": [],
+    }
+
+
 def panorama_translation(params: dict[str, Any]) -> dict[str, Any]:
     import cv2
 
