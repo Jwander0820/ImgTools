@@ -1,6 +1,10 @@
 import json
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
+
+from PIL import Image
 
 
 class UIAPITests(unittest.TestCase):
@@ -104,6 +108,21 @@ class UIAPITests(unittest.TestCase):
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["paths"], ["D:/Images/a.png"])
+
+    def test_api_picker_can_return_browser_safe_previews_for_selected_images(self):
+        from imgtools.ui.api import handle_pick
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "source.tif"
+            Image.new("RGB", (1600, 900), "navy").save(source)
+            with patch("imgtools.ui.api.pick_paths", return_value=[str(source)]):
+                result = handle_pick({"mode": "files", "include_previews": True})
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["paths"], [str(source)])
+        self.assertEqual(len(result["previews"]), 1)
+        self.assertEqual(result["previews"][0]["path"], str(source))
+        self.assertTrue(result["previews"][0]["data_url"].startswith("data:image/png;base64,"))
 
 
 if __name__ == "__main__":

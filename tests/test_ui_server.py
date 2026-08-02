@@ -57,6 +57,18 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("removePathItem", script)
         self.assertIn(".forEach((param) => renderPathOrder", script)
 
+    def test_frontend_contains_dialogue_stack_interactive_preview(self):
+        from imgtools.ui.server import STATIC_DIR
+
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        styles = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
+
+        self.assertIn("function renderDialoguePreview", script)
+        self.assertIn("function initDialoguePreview", script)
+        self.assertIn("pickerPayload.include_previews = true", script)
+        self.assertIn("pointermove", script)
+        self.assertIn("dialogue-preview-canvas", styles)
+
     def test_frontend_normalizes_all_local_path_param_types(self):
         from imgtools.ui.server import STATIC_DIR
 

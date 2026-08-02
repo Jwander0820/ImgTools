@@ -45,6 +45,8 @@ PARAM_LABELS = {
     "allow_low_confidence": "接受低信心配對",
     "crop_subtitles": "保留最底部字幕",
     "subtitle_crop_ratio": "字幕區高度比例",
+    "subtitle_top_ratio": "字幕帶起點比例",
+    "line_spacing": "每句間距（像素）",
 }
 
 DEFAULT_ADVANCED_PARAMS = {
@@ -312,6 +314,47 @@ def _specs() -> list[ToolSpec]:
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),
             handler=merge.stack_vertical,
+            featured=True,
+        ),
+        ToolSpec(
+            action="merge.dialogue_stack",
+            title="台詞疊圖",
+            category="merge",
+            description="保留第一張完整畫面，將後續圖片的全寬字幕帶依敘事順序向下排列並即時預覽。",
+            params=(
+                ToolParam(
+                    "input_paths",
+                    "path_list",
+                    True,
+                    description="依台詞發生順序選擇 2～12 張同尺寸圖片",
+                    min_items=2,
+                    max_items=12,
+                ),
+                ToolParam(
+                    "subtitle_top_ratio",
+                    "float",
+                    False,
+                    0.88,
+                    "從畫面高度的此比例開始擷取全寬字幕帶",
+                ),
+                ToolParam(
+                    "line_spacing",
+                    "int",
+                    False,
+                    85,
+                    "每增加一句台詞，成品向下增加的像素高度",
+                ),
+                ToolParam(
+                    "output_path",
+                    "path",
+                    False,
+                    description="留白時輸出到第一張圖片旁；既有檔案會自動加上編號。",
+                    default_hint="第一張圖片旁的 output.png",
+                    source_default_hint="第一張圖片旁的 <第一張檔名>.png",
+                ),
+                ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
+            ),
+            handler=merge.dialogue_stack,
             featured=True,
         ),
         ToolSpec(

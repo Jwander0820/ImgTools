@@ -127,6 +127,101 @@ def stack_vertical(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def dialogue_stack(params: dict[str, Any]) -> dict[str, Any]:
+    """Keep the first frame, then stack full-width subtitle bands from later frames."""
+    from PIL import Image, ImageOps
+
+    raw_paths = params.get("input_paths")
+    if not isinstance(raw_paths, (list, tuple)) or not 2 <= len(raw_paths) <= 12:
+        raise ValueError("input_paths must contain 2 to 12 image paths")
+
+    subtitle_top_ratio = float(params.get("subtitle_top_ratio", 0.88))
+    if not 0.0 < subtitle_top_ratio < 1.0:
+        raise ValueError("subtitle_top_ratio must be greater than 0.0 and less than 1.0")
+    line_spacing = int(params.get("line_spacing", 85))
+    if line_spacing <= 0:
+        raise ValueError("line_spacing must be greater than 0")
+
+    paths = [Path(str(path)).expanduser().resolve() for path in raw_paths]
+    images = []
+    try:
+        for path in paths:
+            if not path.is_file():
+                raise FileNotFoundError(f"Input image does not exist: {path}")
+            with Image.open(path) as source:
+                images.append(ImageOps.exif_transpose(source).copy())
+
+        sizes = {image.size for image in images}
+        if len(sizes) != 1:
+            raise ValueError("All input images must have the same dimensions")
+
+        width, source_height = images[0].size
+        subtitle_top = round(source_height * subtitle_top_ratio)
+        subtitle_top = min(max(subtitle_top, 1), source_height - 1)
+        subtitle_band_height = source_height - subtitle_top
+        if line_spacing > subtitle_band_height:
+            raise ValueError(
+                "line_spacing must not exceed the subtitle band height "
+                f"({subtitle_band_height} pixels)"
+            )
+
+        has_alpha = any(
+            "A" in image.getbands() or "transparency" in image.info
+            for image in images
+        )
+        mode = "RGBA" if has_alpha else "RGB"
+        converted = [image.convert(mode) for image in images]
+        try:
+            output_height = source_height + line_spacing * (len(converted) - 1)
+            background = (0, 0, 0, 0) if has_alpha else "black"
+            canvas = Image.new(mode, (width, output_height), background)
+            try:
+                canvas.paste(converted[0], (0, 0))
+                for index, image in enumerate(converted[1:], start=1):
+                    band = image.crop((0, subtitle_top, width, source_height))
+                    try:
+                        target_y = subtitle_top + line_spacing * index
+                        canvas.paste(band, (0, target_y))
+                    finally:
+                        band.close()
+
+                default_name = f"{default_output_stem(params, paths[0])}.png"
+                requested_output = params.get("output_path")
+                if requested_output and Path(str(requested_output)).suffix.lower() != ".png":
+                    raise ValueError("output_path must end in .png")
+                output_path = resolve_output_path(
+                    requested_output,
+                    paths[0].parent / default_name,
+                    overwrite=bool(params.get("overwrite", False)),
+                    protected_paths=tuple(paths),
+                )
+                canvas.save(output_path, "PNG")
+            finally:
+                canvas.close()
+        finally:
+            for image in converted:
+                image.close()
+    finally:
+        for image in images:
+            image.close()
+
+    return {
+        "ok": True,
+        "outputs": {
+            "files": [abs_path(output_path)],
+            "source_files": [abs_path(path) for path in paths],
+            "image_count": len(paths),
+            "width": width,
+            "height": output_height,
+            "subtitle_top": subtitle_top,
+            "subtitle_band_height": subtitle_band_height,
+            "line_spacing": line_spacing,
+            "overlap": subtitle_band_height - line_spacing,
+        },
+        "warnings": [],
+    }
+
+
 def panorama_translation(params: dict[str, Any]) -> dict[str, Any]:
     import cv2
 

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import base64
+from io import BytesIO
+from pathlib import Path
 from typing import Any
 
 from imgtools.service.registry import get_tool, list_tools
@@ -90,7 +93,16 @@ def handle_pick(payload: dict[str, Any]) -> dict[str, Any]:
             title=str(payload.get("title") or "選擇檔案"),
             default_name=str(payload.get("default_name") or ""),
         )
-        return {"ok": True, "paths": paths}
+        result: dict[str, Any] = {"ok": True, "paths": paths}
+        if bool(payload.get("include_previews")) and mode in {"file", "files"}:
+            previews = []
+            for path in paths[:24]:
+                try:
+                    previews.append({"path": path, **_preview_data(path)})
+                except Exception as exc:
+                    previews.append({"path": path, "error": str(exc)})
+            result["previews"] = previews
+        return result
     except Exception as exc:
         return {
             "ok": False,
@@ -98,3 +110,37 @@ def handle_pick(payload: dict[str, Any]) -> dict[str, Any]:
             "message": f"無法開啟本機選擇器：{exc}",
             "paths": [],
         }
+
+
+def _preview_data(path: str, *, max_width: int = 960) -> dict[str, Any]:
+    """Encode an explicitly picker-selected image for the in-browser preview."""
+    from PIL import Image, ImageOps
+
+    input_path = Path(path).expanduser().resolve()
+    if not input_path.is_file():
+        raise FileNotFoundError(f"Preview image does not exist: {input_path}")
+
+    with Image.open(input_path) as source:
+        oriented = ImageOps.exif_transpose(source)
+        original_width, original_height = oriented.size
+        preview = oriented.convert("RGBA")
+        try:
+            if preview.width > max_width:
+                height = max(1, round(preview.height * max_width / preview.width))
+                rendered = preview.resize((max_width, height), Image.Resampling.LANCZOS)
+            else:
+                rendered = preview.copy()
+        finally:
+            preview.close()
+
+    try:
+        output = BytesIO()
+        rendered.save(output, "PNG")
+        encoded = base64.b64encode(output.getvalue()).decode("ascii")
+        return {
+            "data_url": f"data:image/png;base64,{encoded}",
+            "width": original_width,
+            "height": original_height,
+        }
+    finally:
+        rendered.close()
