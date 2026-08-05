@@ -69,6 +69,26 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("pointermove", script)
         self.assertIn("dialogue-preview-canvas", styles)
 
+    def test_frontend_contains_watermark_positioning_editor(self):
+        from imgtools.ui.server import STATIC_DIR
+
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        styles = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
+
+        self.assertIn("function renderWatermarkEditor", script)
+        self.assertIn("function initWatermarkEditor", script)
+        self.assertIn("function drawWatermarkPreview", script)
+        self.assertIn('id="param_text" type="text" required', script)
+        self.assertIn("請輸入浮水印文字。", script)
+        self.assertIn("watermark.batch_text", script)
+        self.assertIn("data-watermark-color", script)
+        self.assertIn("param_repeat_spacing", script)
+        self.assertIn("data-watermark-position", script)
+        self.assertIn("watermark-preview-canvas", styles)
+        self.assertIn("watermark-position-button", styles)
+        self.assertIn("watermark-direct-input", styles)
+        self.assertIn("watermark-swatch", styles)
+
     def test_frontend_normalizes_all_local_path_param_types(self):
         from imgtools.ui.server import STATIC_DIR
 

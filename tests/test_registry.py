@@ -26,6 +26,7 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("gif.gif_to_mp4", actions)
         self.assertIn("crop.text_regions", actions)
         self.assertIn("watermark.text", actions)
+        self.assertIn("watermark.batch_text", actions)
 
     def test_crop_and_watermark_expose_their_advanced_controls(self):
         from imgtools.service.registry import get_tool
@@ -42,10 +43,23 @@ class RegistryTests(unittest.TestCase):
         )
 
         watermark_params = {param.name: param for param in get_tool("watermark.text").params}
+        self.assertFalse(watermark_params["input_path"].required)
+        self.assertEqual(watermark_params["input_paths"].min_items, 1)
         self.assertEqual(watermark_params["position"].default, "center")
+        self.assertEqual(watermark_params["rotation"].default, 30)
+        self.assertEqual(watermark_params["opacity"].default, 64)
+        self.assertEqual(watermark_params["color"].default, "#000000")
+        self.assertFalse(watermark_params["repeat"].default)
+        self.assertEqual(watermark_params["repeat_spacing"].default, 100)
         self.assertIn("custom", watermark_params["position"].choices)
         self.assertIn("position_x", watermark_params)
         self.assertIn("position_y", watermark_params)
+
+        batch_params = {param.name: param for param in get_tool("watermark.batch_text").params}
+        self.assertEqual(batch_params["input_paths"].min_items, 1)
+        self.assertEqual(batch_params["rotation"].default, 30)
+        self.assertEqual(batch_params["opacity"].default, 64)
+        self.assertIn("repeat_spacing", batch_params)
 
     def test_get_tool_unknown_action_raises_error(self):
         from imgtools.service.registry import get_tool
