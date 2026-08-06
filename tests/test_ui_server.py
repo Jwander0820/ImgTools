@@ -88,6 +88,11 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("watermark-position-button", styles)
         self.assertIn("watermark-direct-input", styles)
         self.assertIn("watermark-swatch", styles)
+        self.assertIn("--shelf-card:", styles)
+        self.assertIn("background: var(--shelf-card)", styles)
+        self.assertIn("--shelf-card-active:", styles)
+        self.assertIn("--shelf-panel:", styles)
+        self.assertIn("background: var(--shelf-panel)", styles)
 
     def test_frontend_normalizes_all_local_path_param_types(self):
         from imgtools.ui.server import STATIC_DIR
