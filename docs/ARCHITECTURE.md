@@ -90,6 +90,7 @@ result = run_tool(
 | `GET` | `/api/preferences` | 取得 UI 偏好與常用工具 |
 | `POST` | `/api/run` | `{action, params}` 執行工具 |
 | `POST` | `/api/pick` | 開啟 Windows 本機檔案選擇器 |
+| `POST` | `/api/preview` | 將 UI 輸入的本機圖片路徑轉成瀏覽器可顯示的縮圖資料 |
 | `POST` | `/api/preferences` | 更新 `pinned_actions` 或 `pdf_default_dpi` |
 
 這是沒有驗證機制的本機 interface，預設只應綁定 loopback，不應直接公開到網路。

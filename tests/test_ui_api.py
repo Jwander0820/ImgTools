@@ -124,6 +124,38 @@ class UIAPITests(unittest.TestCase):
         self.assertEqual(result["previews"][0]["path"], str(source))
         self.assertTrue(result["previews"][0]["data_url"].startswith("data:image/png;base64,"))
 
+    def test_api_preview_accepts_a_directly_pasted_path(self):
+        from imgtools.ui.api import handle_preview
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "pasted source.png"
+            Image.new("RGB", (1200, 700), "purple").save(source)
+            result = handle_preview({"path": f'"{source}"'})
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["paths"], [str(source)])
+        self.assertEqual(len(result["previews"]), 1)
+        self.assertEqual(result["previews"][0]["width"], 1200)
+        self.assertEqual(result["previews"][0]["height"], 700)
+        self.assertTrue(result["previews"][0]["data_url"].startswith("data:image/png;base64,"))
+
+    def test_api_preview_returns_item_error_for_missing_path(self):
+        from imgtools.ui.api import handle_preview
+
+        result = handle_preview({"paths": ["D:/Images/missing-image.png"]})
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["previews"][0]["path"], "D:/Images/missing-image.png")
+        self.assertIn("error", result["previews"][0])
+
+    def test_api_preview_validates_paths(self):
+        from imgtools.ui.api import handle_preview
+
+        result = handle_preview({"paths": [123]})
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error_code"], "VALIDATION_ERROR")
+
 
 if __name__ == "__main__":
     unittest.main()

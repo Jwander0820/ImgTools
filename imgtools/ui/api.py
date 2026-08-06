@@ -18,6 +18,7 @@ from imgtools.ui.picker import pick_paths
 
 
 PICKER_MODES = {"file", "files", "folder", "save"}
+PREVIEW_PATH_LIMIT = 24
 
 
 def handle_get_tools() -> dict[str, Any]:
@@ -95,13 +96,7 @@ def handle_pick(payload: dict[str, Any]) -> dict[str, Any]:
         )
         result: dict[str, Any] = {"ok": True, "paths": paths}
         if bool(payload.get("include_previews")) and mode in {"file", "files"}:
-            previews = []
-            for path in paths[:24]:
-                try:
-                    previews.append({"path": path, **_preview_data(path)})
-                except Exception as exc:
-                    previews.append({"path": path, "error": str(exc)})
-            result["previews"] = previews
+            result["previews"] = _preview_records(paths)
         return result
     except Exception as exc:
         return {
@@ -112,8 +107,68 @@ def handle_pick(payload: dict[str, Any]) -> dict[str, Any]:
         }
 
 
+def handle_preview(payload: dict[str, Any]) -> dict[str, Any]:
+    """Create browser-safe previews for paths entered in the local UI."""
+    raw_paths = payload.get("paths", payload.get("path"))
+    if isinstance(raw_paths, str):
+        raw_paths = [raw_paths]
+    if not isinstance(raw_paths, list):
+        return {
+            "ok": False,
+            "error_code": "VALIDATION_ERROR",
+            "message": "paths must be a non-empty string or list of strings",
+            "previews": [],
+        }
+    if any(not isinstance(path, str) for path in raw_paths):
+        return {
+            "ok": False,
+            "error_code": "VALIDATION_ERROR",
+            "message": "paths must contain only strings",
+            "previews": [],
+        }
+
+    paths = [_normalize_preview_path(path) for path in raw_paths]
+    paths = [path for path in paths if path]
+    if not paths:
+        return {
+            "ok": False,
+            "error_code": "VALIDATION_ERROR",
+            "message": "paths must contain at least one local path",
+            "previews": [],
+        }
+
+    limited_paths = paths[:PREVIEW_PATH_LIMIT]
+    result: dict[str, Any] = {
+        "ok": True,
+        "paths": limited_paths,
+        "previews": _preview_records(limited_paths),
+    }
+    if len(paths) > PREVIEW_PATH_LIMIT:
+        result["truncated"] = True
+    return result
+
+
+def _normalize_preview_path(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    path = value.strip()
+    if len(path) >= 2 and path.startswith('"') and path.endswith('"'):
+        return path[1:-1]
+    return path
+
+
+def _preview_records(paths: list[str]) -> list[dict[str, Any]]:
+    previews = []
+    for path in paths[:PREVIEW_PATH_LIMIT]:
+        try:
+            previews.append({"path": path, **_preview_data(path)})
+        except Exception as exc:
+            previews.append({"path": path, "error": str(exc)})
+    return previews
+
+
 def _preview_data(path: str, *, max_width: int = 960) -> dict[str, Any]:
-    """Encode an explicitly picker-selected image for the in-browser preview."""
+    """Encode a local image path as a browser-safe in-browser preview."""
     from PIL import Image, ImageOps
 
     input_path = Path(path).expanduser().resolve()

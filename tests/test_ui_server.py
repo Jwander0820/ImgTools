@@ -45,6 +45,9 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("tool.featured", script)
         self.assertIn("param.advanced", script)
         self.assertIn("'/api/pick'", script)
+        self.assertIn("'/api/preview'", script)
+        self.assertIn("queueLocalPreviews", script)
+        self.assertIn("previewPendingPaths", script)
         self.assertIn("video: '影片'", script)
         self.assertIn("localStorage", script)
         self.assertIn("output_naming: outputNaming", script)
@@ -239,6 +242,34 @@ class UIServerTests(unittest.TestCase):
                 conn = HTTPConnection(host, port, timeout=5)
                 payload = json.dumps({"mode": "folder"}).encode("utf-8")
                 conn.request("POST", "/api/pick", body=payload, headers={"Content-Type": "application/json"})
+                response = conn.getresponse()
+                body = json.loads(response.read().decode("utf-8"))
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(body, fake_result)
+
+    def test_http_server_previews_direct_paths(self):
+        from imgtools.ui.server import create_server
+
+        fake_result = {"ok": True, "paths": ["D:/Images/a.png"], "previews": []}
+        with patch("imgtools.ui.server.handle_preview", return_value=fake_result):
+            server = create_server("127.0.0.1", 0)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                host, port = server.server_address
+                conn = HTTPConnection(host, port, timeout=5)
+                payload = json.dumps({"paths": ["D:/Images/a.png"]}).encode("utf-8")
+                conn.request(
+                    "POST",
+                    "/api/preview",
+                    body=payload,
+                    headers={"Content-Type": "application/json"},
+                )
                 response = conn.getresponse()
                 body = json.loads(response.read().decode("utf-8"))
             finally:

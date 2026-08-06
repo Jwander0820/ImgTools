@@ -13,6 +13,7 @@ from imgtools.ui.api import (
     handle_get_tool,
     handle_get_tools,
     handle_pick,
+    handle_preview,
     handle_run,
     handle_update_preferences,
 )
@@ -70,7 +71,7 @@ class ImgToolsHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
-        if path not in {"/api/run", "/api/pick", "/api/preferences"}:
+        if path not in {"/api/run", "/api/pick", "/api/preview", "/api/preferences"}:
             self._send_json({"ok": False, "message": "Not found"}, status=404)
             return
         try:
@@ -78,6 +79,8 @@ class ImgToolsHandler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
             if path == "/api/run":
                 result = handle_run(payload)
+            elif path == "/api/preview":
+                result = handle_preview(payload)
             elif path == "/api/preferences":
                 result = handle_update_preferences(payload)
             else:

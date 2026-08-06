@@ -27,6 +27,9 @@ let preferences = {
 };
 const formState = {};
 const previewImages = new Map();
+const previewErrors = new Map();
+const previewPendingPaths = new Set();
+const previewRequestTimers = new Map();
 let dialoguePreviewRender = 0;
 let watermarkPreviewRender = 0;
 
@@ -364,10 +367,26 @@ function renderForm() {
     .forEach((param) => renderPathOrder(`param_${param.name}`, param));
   if (selected.action === 'merge.dialogue_stack') initDialoguePreview();
   if (isWatermarkAction()) initWatermarkEditor();
+  const previewParam = interactivePreviewParam();
+  if (previewParam) queueLocalPreviews(previewParam, { immediate: true });
 }
 
 function isWatermarkAction() {
   return selected?.action === 'watermark.text' || selected?.action === 'watermark.batch_text';
+}
+
+function interactivePreviewParam() {
+  if (selected?.action === 'merge.dialogue_stack') {
+    return selected.params.find((param) => param.name === 'input_paths') || null;
+  }
+  return isWatermarkAction() ? watermarkInputParam() : null;
+}
+
+function shouldAutoPreview(param) {
+  return Boolean(
+    (selected?.action === 'merge.dialogue_stack' && param.name === 'input_paths')
+      || (isWatermarkAction() && ['input_path', 'input_paths'].includes(param.name)),
+  );
 }
 
 function watermarkParam(name) {
@@ -416,7 +435,7 @@ function renderWatermarkEditor() {
           <div class="watermark-preview-empty" id="watermark-preview-empty">
             <span class="watermark-crosshair">＋</span>
             <strong>選擇一張或多張圖片開始</strong>
-            <span>預覽只載入經由「選擇」明確挑選的檔案。</span>
+            <span>可使用「選擇」或直接貼上完整檔案路徑。</span>
           </div>
           <canvas class="watermark-preview-canvas" id="watermark-preview-canvas" hidden></canvas>
         </div>
@@ -629,17 +648,35 @@ async function drawWatermarkPreview() {
     ? pathItems('param_input_paths')[0]
     : normalizeLocalPath($('param_input_path')?.value || '');
   const record = previewImages.get(path);
+  const pending = Boolean(path && previewPendingPaths.has(path));
+  const error = previewErrors.get(path) || '';
   const canvas = $('watermark-preview-canvas');
   const empty = $('watermark-preview-empty');
   const status = $('watermark-preview-status');
   if (!record) {
     canvas.hidden = true;
     empty.hidden = false;
-    status.classList.remove('warning');
+    status.classList.toggle('warning', Boolean(error));
+    empty.querySelector('strong').textContent = pending
+      ? '正在載入預覽'
+      : error
+        ? '無法載入預覽'
+        : '選擇或貼上一張圖片開始';
+    empty.querySelector('span:not(.watermark-crosshair)').textContent = pending
+      ? '正在由本機 ImgTools 讀取縮圖。'
+      : error
+        ? `${error}。仍可嘗試正式處理。`
+        : '可使用「選擇」或直接貼上完整檔案路徑。';
+    status.textContent = pending
+      ? '正在讀取圖片預覽…'
+      : error
+        ? '預覽失敗，但不會阻止正式處理。'
+        : '浮水印會以目前設定疊加在預覽上。';
     $('watermark-preview-size').textContent = '等待圖片';
     return;
   }
 
+  status.classList.remove('warning');
   status.textContent = '正在更新預覽…';
   try {
     const image = await loadDialoguePreviewImage(record.data_url);
@@ -837,20 +874,39 @@ async function drawDialoguePreview() {
   const renderId = ++dialoguePreviewRender;
   const paths = pathItems('param_input_paths');
   const missing = paths.filter((path) => !previewImages.has(path));
+  const pending = missing.some((path) => previewPendingPaths.has(path));
+  const previewError = previewErrorFor(missing);
   const canvas = $('dialogue-preview-canvas');
   const empty = $('dialogue-preview-empty');
   const status = $('dialogue-preview-status');
   if (paths.length < 2 || missing.length) {
     canvas.hidden = true;
     empty.hidden = false;
-    empty.querySelector('strong').textContent = paths.length < 2 ? '選擇至少兩張圖片' : '需要重新載入預覽';
-    empty.querySelector('span').textContent = missing.length
-      ? '貼上的路徑可以正式處理；互動預覽請使用「選擇圖片」載入。'
-      : '預覽只載入經由「選擇圖片」明確選取的檔案。';
+    empty.querySelector('strong').textContent = paths.length < 2
+      ? '選擇或貼上至少兩張圖片'
+      : pending
+        ? '正在載入預覽'
+        : previewError
+          ? '無法載入預覽'
+          : '需要重新載入預覽';
+    empty.querySelector('span').textContent = paths.length < 2
+      ? '可使用「選擇圖片」，或在文字框中每行貼上一個完整路徑。'
+      : pending
+        ? '正在由本機 ImgTools 讀取縮圖。'
+        : previewError
+          ? `${previewError}。仍可嘗試正式處理。`
+          : '可重新輸入路徑或使用「選擇圖片」載入。';
+    status.classList.toggle('warning', Boolean(previewError));
+    status.textContent = pending
+      ? '正在讀取圖片預覽…'
+      : previewError
+        ? '預覽失敗，但不會阻止正式處理。'
+        : '第一張會完整保留，後續只取底部全寬字幕帶。';
     $('dialogue-preview-size').textContent = '等待圖片';
     return;
   }
 
+  status.classList.remove('warning');
   status.textContent = '正在準備預覽…';
   try {
     const records = paths.map((path) => previewImages.get(path));
@@ -995,6 +1051,11 @@ function renderField(param) {
     textarea.addEventListener('input', () => renderPathOrder(id, param));
     renderPathOrder(id, param);
   }
+  if (shouldAutoPreview(param)) {
+    const previewInput = block.querySelector(`#${id}`);
+    previewInput?.addEventListener('input', () => queueLocalPreviews(param));
+    previewInput?.addEventListener('change', () => queueLocalPreviews(param, { immediate: true }));
+  }
   return block;
 }
 
@@ -1077,6 +1138,77 @@ function pickerMode(param) {
   return 'file';
 }
 
+function previewPathsFor(param) {
+  const id = `param_${param.name}`;
+  if (param.type === 'path_list') return pathItems(id);
+  const path = normalizeLocalPath($(id)?.value || '');
+  return path ? [path] : [];
+}
+
+function previewErrorFor(paths) {
+  return paths.map((path) => previewErrors.get(path)).find(Boolean) || '';
+}
+
+function refreshInteractivePreview() {
+  if (selected?.action === 'merge.dialogue_stack') drawDialoguePreview();
+  if (isWatermarkAction()) drawWatermarkPreview();
+}
+
+function queueLocalPreviews(param, { immediate = false } = {}) {
+  if (!shouldAutoPreview(param)) return;
+  const key = `param_${param.name}`;
+  const previous = previewRequestTimers.get(key);
+  if (previous) window.clearTimeout(previous);
+  const delay = immediate ? 0 : 350;
+  const timer = window.setTimeout(() => {
+    previewRequestTimers.delete(key);
+    requestLocalPreviews(param);
+  }, delay);
+  previewRequestTimers.set(key, timer);
+}
+
+async function requestLocalPreviews(param) {
+  const paths = previewPathsFor(param);
+  paths.forEach((path) => previewErrors.delete(path));
+  const missing = paths.filter((path) => !previewImages.has(path));
+  const requestPaths = missing.filter((path) => !previewPendingPaths.has(path));
+  if (!requestPaths.length) {
+    refreshInteractivePreview();
+    return;
+  }
+
+  requestPaths.forEach((path) => previewPendingPaths.add(path));
+  refreshInteractivePreview();
+  try {
+    const response = await fetch('/api/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths: requestPaths }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.message || '圖片預覽無法載入');
+    (data.previews || []).forEach((preview) => {
+      const path = normalizeLocalPath(preview.path);
+      if (preview.data_url) {
+        previewImages.set(path, { ...preview, path });
+        previewErrors.delete(path);
+      } else if (preview.error) {
+        previewErrors.set(path, preview.error);
+      }
+    });
+    requestPaths.forEach((path) => {
+      if (!previewImages.has(path) && !previewErrors.has(path)) {
+        previewErrors.set(path, '無法產生圖片預覽');
+      }
+    });
+  } catch (error) {
+    requestPaths.forEach((path) => previewErrors.set(path, error.message));
+  } finally {
+    requestPaths.forEach((path) => previewPendingPaths.delete(path));
+    refreshInteractivePreview();
+  }
+}
+
 async function openPicker(param, button) {
   const original = button.innerHTML;
   button.disabled = true;
@@ -1097,7 +1229,11 @@ async function openPicker(param, button) {
     if (!response.ok || !data.ok) throw new Error(data.message || '選擇器無法使用');
     if (!data.paths || !data.paths.length) return;
     (data.previews || []).forEach((preview) => {
-      if (preview.data_url) previewImages.set(normalizeLocalPath(preview.path), preview);
+      const path = normalizeLocalPath(preview.path);
+      if (preview.data_url) {
+        previewImages.set(path, { ...preview, path });
+        previewErrors.delete(path);
+      }
     });
     const element = $(`param_${param.name}`);
     element.value = param.type === 'path_list' ? data.paths.join('\n') : data.paths[0];
