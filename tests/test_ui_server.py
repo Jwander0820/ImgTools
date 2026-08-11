@@ -2,10 +2,39 @@ import json
 import threading
 import unittest
 from http.client import HTTPConnection
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 
 class UIServerTests(unittest.TestCase):
+    def test_convenience_server_falls_back_when_default_port_is_unavailable(self):
+        from imgtools.ui.server import serve
+
+        denied = PermissionError(13, "port is reserved")
+        fallback_server = Mock()
+        fallback_server.server_address = ("127.0.0.1", 49152)
+
+        def immediate_timer(_delay, callback):
+            timer = Mock()
+            timer.start.side_effect = callback
+            return timer
+
+        with patch(
+            "imgtools.ui.server.create_server",
+            side_effect=[denied, fallback_server],
+        ) as create_server, patch(
+            "imgtools.ui.server.threading.Timer",
+            side_effect=immediate_timer,
+        ), patch("imgtools.ui.server.webbrowser.open") as open_browser:
+            serve("127.0.0.1", 8765, open_browser=True, fallback_port=True)
+
+        self.assertEqual(
+            create_server.call_args_list,
+            [call("127.0.0.1", 8765), call("127.0.0.1", 0)],
+        )
+        open_browser.assert_called_once_with("http://127.0.0.1:49152")
+        fallback_server.serve_forever.assert_called_once_with()
+        fallback_server.server_close.assert_called_once_with()
+
     def test_index_loads_separate_frontend_assets(self):
         from imgtools.ui.server import INDEX_HTML
 
@@ -71,6 +100,23 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("pickerPayload.include_previews = true", script)
         self.assertIn("pointermove", script)
         self.assertIn("dialogue-preview-canvas", styles)
+
+    def test_frontend_contains_vertical_stack_input_and_result_previews(self):
+        from imgtools.ui.server import STATIC_DIR
+
+        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        styles = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
+
+        self.assertIn("function isStackVerticalAction", script)
+        self.assertIn("path-order-thumbnail", script)
+        self.assertIn("function renderStackVerticalPreview", script)
+        self.assertIn("function drawStackVerticalPreview", script)
+        self.assertIn("stack-preview-canvas", styles)
+        self.assertIn("stack-preview-stage", styles)
+        self.assertIn("function loadResultPreview", script)
+        self.assertIn("data.action === 'merge.stack_vertical'", script)
+        self.assertIn("result-preview-image", styles)
+        self.assertIn("result-preview-stage", styles)
 
     def test_frontend_contains_watermark_positioning_editor(self):
         from imgtools.ui.server import STATIC_DIR

@@ -8,7 +8,7 @@ PORT = 8765
 
 
 def main() -> None:
-    serve(HOST, PORT, open_browser=True)
+    serve(HOST, PORT, open_browser=True, fallback_port=True)
 
 
 if __name__ == "__main__":

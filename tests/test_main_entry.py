@@ -9,7 +9,12 @@ class MainEntryTests(unittest.TestCase):
         with patch("main.serve") as serve:
             main.main()
 
-        serve.assert_called_once_with("127.0.0.1", 8765, open_browser=True)
+        serve.assert_called_once_with(
+            "127.0.0.1",
+            8765,
+            open_browser=True,
+            fallback_port=True,
+        )
 
 
 if __name__ == "__main__":

@@ -30,7 +30,7 @@
 
 | 路徑 | 責任 | 維護時機 |
 |---|---|---|
-| `main.py` | 一鍵啟動 `127.0.0.1:8765` UI 並開啟瀏覽器的便利入口 | 預設 UI 啟動行為改變時 |
+| `main.py` | 優先啟動 `127.0.0.1:8765` UI；埠不可用時自動 fallback 並開啟瀏覽器的便利入口 | 預設 UI 啟動行為改變時 |
 | `imgtools/__main__.py` | `python -m imgtools` 的唯一模組入口 | CLI 啟動方式改變時 |
 | `imgtools/cli.py` | `list`、`describe`、`run`、`ui` 命令 | 新增命令列層級能力時 |
 | `imgtools/service/registry.py` | 所有 action、參數 metadata 與 handler 對應 | 新增／修改工具時必改 |
@@ -51,7 +51,7 @@
 
 ### 3.1 一鍵 UI 入口
 
-從專案根目錄執行 `python main.py`，會呼叫 `imgtools.ui.server.serve("127.0.0.1", 8765, open_browser=True)`。這個檔案只負責提供方便的啟動方式，不承載 UI 或工具邏輯。
+從專案根目錄執行 `python main.py`，會呼叫 `imgtools.ui.server.serve("127.0.0.1", 8765, open_browser=True, fallback_port=True)`。若 8765 被作業系統保留或已遭占用，server 會改用由作業系統分配的可用埠；瀏覽器永遠開啟實際綁定的網址。這個檔案只負責提供方便的啟動方式，不承載 UI 或工具邏輯。
 
 ### 3.2 CLI
 
@@ -62,7 +62,7 @@
 | `list` | 輸出所有 `ToolSpec` 的 JSON 陣列 |
 | `describe <action>` | 輸出指定 action metadata |
 | `run <action>` | 以 `--param key=value` 或 `--params-json` 呼叫 runner |
-| `ui` | 啟動本機 UI；預設 `127.0.0.1:8765` |
+| `ui` | 啟動本機 UI；預設優先使用 `127.0.0.1:8765`，未指定 `--port` 時允許自動 fallback |
 
 ### 3.3 Python
 

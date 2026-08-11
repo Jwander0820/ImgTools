@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import json
 import threading
 import webbrowser
@@ -31,8 +32,23 @@ def create_server(host: str = "127.0.0.1", port: int = 8765) -> ThreadingHTTPSer
     return ThreadingHTTPServer((host, port), ImgToolsHandler)
 
 
-def serve(host: str = "127.0.0.1", port: int = 8765, *, open_browser: bool = True) -> None:
-    server = create_server(host, port)
+def serve(
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    *,
+    open_browser: bool = True,
+    fallback_port: bool = False,
+) -> None:
+    try:
+        server = create_server(host, port)
+    except OSError as exc:
+        if not fallback_port or port == 0 or not _is_unavailable_port_error(exc):
+            raise
+        server = create_server(host, 0)
+        print(
+            f"ImgTools could not use port {port}; "
+            f"using available port {server.server_address[1]} instead."
+        )
     url = f"http://{host}:{server.server_address[1]}"
     print(f"ImgTools local UI: {url}")
     if open_browser:
@@ -43,6 +59,14 @@ def serve(host: str = "127.0.0.1", port: int = 8765, *, open_browser: bool = Tru
         print("\nImgTools local UI stopped.")
     finally:
         server.server_close()
+
+
+def _is_unavailable_port_error(exc: OSError) -> bool:
+    return (
+        isinstance(exc, PermissionError)
+        or getattr(exc, "winerror", None) in {10013, 10048}
+        or getattr(exc, "errno", None) in {errno.EACCES, errno.EADDRINUSE}
+    )
 
 
 class ImgToolsHandler(BaseHTTPRequestHandler):

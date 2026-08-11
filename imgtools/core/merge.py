@@ -65,8 +65,8 @@ def stack_vertical(params: dict[str, Any]) -> dict[str, Any]:
     from PIL import Image, ImageOps
 
     raw_paths = params.get("input_paths")
-    if not isinstance(raw_paths, (list, tuple)) or not 2 <= len(raw_paths) <= 4:
-        raise ValueError("input_paths must contain 2 to 4 image paths")
+    if not isinstance(raw_paths, (list, tuple)) or not 2 <= len(raw_paths) <= 9:
+        raise ValueError("input_paths must contain 2 to 9 image paths")
 
     paths = [Path(str(path)).expanduser().resolve() for path in raw_paths]
     images = []

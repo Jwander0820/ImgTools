@@ -35,17 +35,30 @@ class VerticalStackTests(unittest.TestCase):
             self.assertEqual(result["outputs"]["width"], 4)
             self.assertEqual(result["outputs"]["height"], 6)
 
-    def test_requires_two_to_four_images(self):
+    def test_requires_two_to_nine_images(self):
         from imgtools.core.merge import stack_vertical
 
         with tempfile.TemporaryDirectory() as tmp:
             image = Path(tmp) / "one.png"
             self._save(image, (2, 2), "white")
 
-            with self.assertRaisesRegex(ValueError, "2 to 4"):
+            with self.assertRaisesRegex(ValueError, "2 to 9"):
                 stack_vertical({"input_paths": [str(image)]})
-            with self.assertRaisesRegex(ValueError, "2 to 4"):
-                stack_vertical({"input_paths": [str(image)] * 5})
+            with self.assertRaisesRegex(ValueError, "2 to 9"):
+                stack_vertical({"input_paths": [str(image)] * 10})
+
+    def test_accepts_nine_images(self):
+        from imgtools.core.merge import stack_vertical
+
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "one.png"
+            self._save(image, (2, 2), "white")
+
+            result = stack_vertical({"input_paths": [str(image)] * 9})
+
+            self.assertEqual(result["outputs"]["image_count"], 9)
+            self.assertEqual(result["outputs"]["width"], 2)
+            self.assertEqual(result["outputs"]["height"], 18)
 
     def test_rejects_mismatched_widths_instead_of_resizing(self):
         from imgtools.core.merge import stack_vertical

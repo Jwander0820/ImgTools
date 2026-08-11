@@ -78,7 +78,7 @@ class RegistryTests(unittest.TestCase):
         self.assertTrue(params["crop_subtitles"].default)
         self.assertEqual(params["subtitle_crop_ratio"].default, 0.08)
 
-    def test_vertical_stack_exposes_ordered_two_to_four_image_contract(self):
+    def test_vertical_stack_exposes_ordered_two_to_nine_image_contract(self):
         from imgtools.service.registry import get_tool
 
         tool = get_tool("merge.stack_vertical")
@@ -86,7 +86,7 @@ class RegistryTests(unittest.TestCase):
 
         self.assertTrue(tool.featured)
         self.assertEqual(params["input_paths"]["min_items"], 2)
-        self.assertEqual(params["input_paths"]["max_items"], 4)
+        self.assertEqual(params["input_paths"]["max_items"], 9)
         self.assertIn("由上到下", params["input_paths"]["description"])
 
     def test_dialogue_stack_exposes_interactive_preview_parameters(self):

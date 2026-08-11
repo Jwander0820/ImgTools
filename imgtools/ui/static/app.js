@@ -32,6 +32,8 @@ const previewPendingPaths = new Set();
 const previewRequestTimers = new Map();
 let dialoguePreviewRender = 0;
 let watermarkPreviewRender = 0;
+let stackPreviewRender = 0;
+let resultPreviewRender = 0;
 
 const $ = (id) => document.getElementById(id);
 
@@ -338,6 +340,7 @@ function renderForm() {
     });
 
     nodes.push(basicGrid);
+    if (selected.action === 'merge.stack_vertical') nodes.push(renderStackVerticalPreview());
     if (selected.action === 'merge.dialogue_stack') nodes.push(renderDialoguePreview());
     if (advancedGrid.childElementCount) {
       const details = document.createElement('details');
@@ -365,6 +368,7 @@ function renderForm() {
   selected.params
     .filter((param) => param.type === 'path_list')
     .forEach((param) => renderPathOrder(`param_${param.name}`, param));
+  if (selected.action === 'merge.stack_vertical') initStackVerticalPreview();
   if (selected.action === 'merge.dialogue_stack') initDialoguePreview();
   if (isWatermarkAction()) initWatermarkEditor();
   const previewParam = interactivePreviewParam();
@@ -375,8 +379,12 @@ function isWatermarkAction() {
   return selected?.action === 'watermark.text' || selected?.action === 'watermark.batch_text';
 }
 
+function isStackVerticalAction() {
+  return selected?.action === 'merge.stack_vertical';
+}
+
 function interactivePreviewParam() {
-  if (selected?.action === 'merge.dialogue_stack') {
+  if (selected?.action === 'merge.dialogue_stack' || isStackVerticalAction()) {
     return selected.params.find((param) => param.name === 'input_paths') || null;
   }
   return isWatermarkAction() ? watermarkInputParam() : null;
@@ -385,6 +393,7 @@ function interactivePreviewParam() {
 function shouldAutoPreview(param) {
   return Boolean(
     (selected?.action === 'merge.dialogue_stack' && param.name === 'input_paths')
+      || (isStackVerticalAction() && param.name === 'input_paths')
       || (isWatermarkAction() && ['input_path', 'input_paths'].includes(param.name)),
   );
 }
@@ -773,6 +782,122 @@ function watermarkPositionLabel(mode) {
   return { center: '中央', top_left: '左上', top_right: '右上', bottom_left: '左下', bottom_right: '右下', custom: '自訂' }[mode] || mode;
 }
 
+function renderStackVerticalPreview() {
+  const panel = document.createElement('section');
+  panel.className = 'stack-preview';
+  panel.innerHTML = `
+    <div class="stack-preview-heading">
+      <div><p class="eyebrow">Before export</p><h3>輸出前疊圖預覽</h3></div>
+      <p>依目前由上到下的順序，用縮圖即時模擬正式輸出；不會提前寫入檔案。</p>
+    </div>
+    <div class="stack-preview-shell">
+      <div class="stack-preview-bar">
+        <span><i></i>即時合成</span>
+        <code id="stack-preview-size">等待圖片</code>
+      </div>
+      <div class="stack-preview-stage" id="stack-preview-stage">
+        <div class="stack-preview-empty" id="stack-preview-empty">
+          <strong>選擇至少兩張同寬圖片</strong>
+          <span>選圖後會在這裡顯示依目前順序合成的完整長圖。</span>
+        </div>
+        <canvas class="stack-preview-canvas" id="stack-preview-canvas" hidden></canvas>
+      </div>
+      <p class="stack-preview-status" id="stack-preview-status" role="status">預覽只使用縮圖，不會建立或修改輸出檔。</p>
+    </div>`;
+  return panel;
+}
+
+function initStackVerticalPreview() {
+  const pathInput = $('param_input_paths');
+  pathInput?.addEventListener('input', drawStackVerticalPreview);
+  pathInput?.addEventListener('change', drawStackVerticalPreview);
+  drawStackVerticalPreview();
+}
+
+async function drawStackVerticalPreview() {
+  if (!isStackVerticalAction()) return;
+  const renderId = ++stackPreviewRender;
+  const paths = pathItems('param_input_paths');
+  const missing = paths.filter((path) => !previewImages.has(path));
+  const pending = missing.some((path) => previewPendingPaths.has(path));
+  const previewError = previewErrorFor(missing);
+  const canvas = $('stack-preview-canvas');
+  const empty = $('stack-preview-empty');
+  const status = $('stack-preview-status');
+  const size = $('stack-preview-size');
+  const invalidCount = paths.length > 9;
+  if (paths.length < 2 || invalidCount || missing.length) {
+    canvas.hidden = true;
+    empty.hidden = false;
+    empty.querySelector('strong').textContent = invalidCount
+      ? '快速直向疊圖最多支援九張圖片'
+      : paths.length < 2
+        ? '選擇或貼上至少兩張同寬圖片'
+        : pending
+          ? '正在載入預覽'
+          : previewError
+            ? '無法載入部分圖片'
+            : '需要重新載入預覽';
+    empty.querySelector('span').textContent = invalidCount
+      ? '請移除多餘圖片後再確認輸出前預覽。'
+      : paths.length < 2
+        ? '可使用「選擇圖片」，或在文字框中每行貼上一個完整路徑。'
+        : pending
+          ? '正在由本機 ImgTools 讀取縮圖。'
+          : previewError
+            ? `${previewError}。預覽失敗不會修改任何檔案。`
+            : '可重新輸入路徑或使用「選擇圖片」載入。';
+    status.classList.toggle('warning', invalidCount || Boolean(previewError));
+    status.textContent = pending
+      ? '正在讀取圖片並準備合成預覽…'
+      : invalidCount
+        ? '請將圖片數量調整為 2～9 張。'
+        : previewError
+          ? '部分縮圖無法讀取，尚未建立任何輸出。'
+          : '預覽只使用縮圖，不會建立或修改輸出檔。';
+    size.textContent = '等待圖片';
+    return;
+  }
+
+  status.classList.remove('warning');
+  status.textContent = '正在依目前順序合成預覽…';
+  try {
+    const records = paths.map((path) => previewImages.get(path));
+    const widths = new Set(records.map((record) => record.width));
+    if (widths.size !== 1) throw new Error('所有圖片必須同寬，正式輸出不會自動縮放原圖');
+    const images = await Promise.all(records.map((record) => loadDialoguePreviewImage(record.data_url)));
+    if (renderId !== stackPreviewRender) return;
+
+    const originalWidth = records[0].width;
+    const originalHeight = records.reduce((total, record) => total + record.height, 0);
+    const scale = Math.min(1, 720 / originalWidth, 8192 / originalHeight);
+    const renderedHeights = records.map((record) => Math.max(1, Math.round(record.height * scale)));
+    canvas.width = Math.max(1, Math.round(originalWidth * scale));
+    canvas.height = renderedHeights.reduce((total, height) => total + height, 0);
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    let top = 0;
+    images.forEach((image, index) => {
+      context.drawImage(image, 0, top, canvas.width, renderedHeights[index]);
+      top += renderedHeights[index];
+    });
+
+    canvas.hidden = false;
+    empty.hidden = true;
+    size.textContent = `${originalWidth} × ${originalHeight} px`;
+    status.textContent = `目前依 ${paths.length} 張圖片的順序預覽；正式輸出保持原始解析度。`;
+  } catch (error) {
+    if (renderId !== stackPreviewRender) return;
+    canvas.hidden = true;
+    empty.hidden = false;
+    empty.querySelector('strong').textContent = '無法建立疊圖預覽';
+    empty.querySelector('span').textContent = error.message;
+    size.textContent = '預覽失敗';
+    status.classList.add('warning');
+    status.textContent = '請確認所有圖片寬度一致後再執行。';
+  }
+}
+
 function renderDialoguePreview() {
   const ratioParam = selected.params.find((param) => param.name === 'subtitle_top_ratio');
   const spacingParam = selected.params.find((param) => param.name === 'line_spacing');
@@ -1113,10 +1238,22 @@ function renderPathOrder(id, param) {
   items.forEach((path, index) => {
     const item = document.createElement('li');
     const filename = path.split(/[\\/]/).pop() || path;
-    item.className = 'path-order-item';
+    const record = previewImages.get(path);
+    const showThumbnail = isStackVerticalAction() && param.name === 'input_paths';
+    const thumbnailState = previewPendingPaths.has(path)
+      ? '載入中'
+      : previewErrors.has(path)
+        ? '無法預覽'
+        : '等待縮圖';
+    const thumbnail = showThumbnail
+      ? `<span class="path-order-thumbnail${record ? ' ready' : ''}" title="${escapeHtml(record ? `${record.width} × ${record.height} px` : thumbnailState)}">${record ? `<img src="${escapeHtml(record.data_url)}" alt="第 ${index + 1} 張縮圖">` : `<span>${escapeHtml(thumbnailState)}</span>`}</span>`
+      : '';
+    const pathDetail = record ? `${record.width} × ${record.height} px · ${path}` : path;
+    item.className = `path-order-item${showThumbnail ? ' has-thumbnail' : ''}`;
     item.innerHTML = `
       <span class="path-order-index">${index + 1}</span>
-      <span class="path-order-copy"><strong>${escapeHtml(filename)}</strong><small>${escapeHtml(path)}</small></span>
+      ${thumbnail}
+      <span class="path-order-copy"><strong>${escapeHtml(filename)}</strong><small>${escapeHtml(pathDetail)}</small></span>
       <span class="path-order-actions">
         <button type="button" data-move="-1" aria-label="將第 ${index + 1} 張上移" ${index === 0 ? 'disabled' : ''}>↑</button>
         <button type="button" data-move="1" aria-label="將第 ${index + 1} 張下移" ${index === items.length - 1 ? 'disabled' : ''}>↓</button>
@@ -1150,6 +1287,11 @@ function previewErrorFor(paths) {
 }
 
 function refreshInteractivePreview() {
+  if (isStackVerticalAction()) {
+    const param = selected.params.find((item) => item.name === 'input_paths');
+    if (param) renderPathOrder('param_input_paths', param);
+    drawStackVerticalPreview();
+  }
   if (selected?.action === 'merge.dialogue_stack') drawDialoguePreview();
   if (isWatermarkAction()) drawWatermarkPreview();
 }
@@ -1215,7 +1357,7 @@ async function openPicker(param, button) {
   button.textContent = '選擇中…';
   try {
     const pickerPayload = { mode: pickerMode(param), title: `選擇${param.label}` };
-    if ((selected?.action === 'merge.dialogue_stack' && param.type === 'path_list')
+    if (((selected?.action === 'merge.dialogue_stack' || isStackVerticalAction()) && param.type === 'path_list')
       || (isWatermarkAction() && param.type === 'path_list')
       || (selected?.action === 'watermark.text' && param.name === 'input_path')) {
       pickerPayload.include_previews = true;
@@ -1344,6 +1486,7 @@ async function runTool(event) {
 }
 
 function renderResult(data) {
+  const previewRenderId = ++resultPreviewRender;
   const cards = [];
   const files = Array.isArray(data.outputs?.files) ? data.outputs.files : [];
   if (data.ok) {
@@ -1354,6 +1497,17 @@ function renderResult(data) {
   files.forEach((path, index) => {
     cards.push(`<div class="result-file"><span class="file-icon">${iconFor(selected?.category || 'merge')}</span><div><small>輸出 ${index + 1}</small><code>${escapeHtml(path)}</code></div><button type="button" data-copy-path="${index}">複製路徑</button></div>`);
   });
+  if (data.ok && data.action === 'merge.stack_vertical' && files.length) {
+    cards.push(`
+      <section class="result-preview" data-result-preview-path="${escapeHtml(files[0])}">
+        <div class="result-preview-heading"><strong>疊圖成品預覽</strong><span id="result-preview-size">載入中…</span></div>
+        <div class="result-preview-stage">
+          <div class="result-preview-empty" id="result-preview-empty">正在由本機讀取成品縮圖…</div>
+          <img class="result-preview-image" id="result-preview-image" alt="快速直向疊圖成品預覽" hidden>
+        </div>
+        <p class="result-preview-status" id="result-preview-status">預覽已縮小顯示，輸出檔仍保留原始解析度。</p>
+      </section>`);
+  }
   (data.warnings || []).forEach((warning) => cards.push(`<div class="result-warning">${alertIcon()}<span>${escapeHtml(warning)}</span></div>`));
   $('result-summary').innerHTML = cards.join('');
   document.querySelectorAll('[data-copy-path]').forEach((button) => {
@@ -1362,9 +1516,44 @@ function renderResult(data) {
   const manifest = $('manifest-note');
   manifest.hidden = !data.manifest_path;
   manifest.textContent = data.manifest_path ? '本次執行紀錄已集中保存於 Server。' : '';
+  if (data.ok && data.action === 'merge.stack_vertical' && files.length) {
+    loadResultPreview(files[0], previewRenderId);
+  }
+}
+
+async function loadResultPreview(path, renderId) {
+  try {
+    const response = await fetch('/api/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.message || '成品預覽無法載入');
+    const preview = data.previews?.[0];
+    if (!preview?.data_url) throw new Error(preview?.error || '成品預覽無法載入');
+    if (renderId !== resultPreviewRender) return;
+    const image = $('result-preview-image');
+    const empty = $('result-preview-empty');
+    if (!image || !empty) return;
+    image.src = preview.data_url;
+    image.hidden = false;
+    empty.hidden = true;
+    $('result-preview-size').textContent = `${preview.width} × ${preview.height} px`;
+    $('result-preview-status').textContent = '可在預覽區捲動查看完整長圖；輸出檔仍保留原始解析度。';
+  } catch (error) {
+    if (renderId !== resultPreviewRender) return;
+    const empty = $('result-preview-empty');
+    if (!empty) return;
+    empty.textContent = `無法載入成品預覽：${error.message}`;
+    empty.classList.add('warning');
+    const status = $('result-preview-status');
+    if (status) status.textContent = '成品已輸出，可使用上方路徑開啟原始檔。';
+  }
 }
 
 function renderTransientMessage(title, message, warning = false) {
+  resultPreviewRender += 1;
   $('result-summary').innerHTML = `<div class="result-hero ${warning ? 'failure' : 'success'}"><span class="result-symbol">${warning ? alertIcon() : checkIcon()}</span><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span></div></div>`;
 }
 

@@ -296,15 +296,15 @@ def _specs() -> list[ToolSpec]:
             action="merge.stack_vertical",
             title="快速直向疊圖",
             category="merge",
-            description="將 2～4 張同寬圖片依指定順序由上到下疊成一張 PNG，不縮放原圖。",
+            description="將 2～9 張同寬圖片依指定順序由上到下疊成一張 PNG，不縮放原圖。",
             params=(
                 ToolParam(
                     "input_paths",
                     "path_list",
                     True,
-                    description="依由上到下的順序選擇 2～4 張同寬圖片",
+                    description="依由上到下的順序選擇 2～9 張同寬圖片",
                     min_items=2,
-                    max_items=4,
+                    max_items=9,
                 ),
                 ToolParam(
                     "output_path",
