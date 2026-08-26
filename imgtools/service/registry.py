@@ -312,7 +312,7 @@ def _specs() -> list[ToolSpec]:
                     False,
                     description="留白時輸出到第一張圖片旁；既有檔案會自動加上編號。",
                     default_hint="第一張圖片旁的 output.png",
-                    source_default_hint="第一張圖片旁的 <第一張檔名>.png",
+                    source_default_hint="第一張圖片旁的 <最後一張檔名>.png",
                 ),
                 ToolParam("overwrite", "bool", False, False, "是否覆寫既有輸出檔"),
             ),

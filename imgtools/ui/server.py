@@ -28,13 +28,13 @@ STATIC_CONTENT_TYPES = {
 }
 
 
-def create_server(host: str = "127.0.0.1", port: int = 8765) -> ThreadingHTTPServer:
+def create_server(host: str = "127.0.0.1", port: int = 5858) -> ThreadingHTTPServer:
     return ThreadingHTTPServer((host, port), ImgToolsHandler)
 
 
 def serve(
     host: str = "127.0.0.1",
-    port: int = 8765,
+    port: int = 5858,
     *,
     open_browser: bool = True,
     fallback_port: bool = False,

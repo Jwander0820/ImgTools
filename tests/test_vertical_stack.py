@@ -107,6 +107,30 @@ class VerticalStackTests(unittest.TestCase):
                     }
                 )
 
+    def test_source_naming_uses_last_image_stem_beside_first_image(self):
+        from imgtools.core.merge import stack_vertical
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first_folder = root / "first-folder"
+            last_folder = root / "last-folder"
+            first_folder.mkdir()
+            last_folder.mkdir()
+            first = first_folder / "opening.png"
+            last = last_folder / "ending.jpg"
+            self._save(first, (2, 2), "white")
+            self._save(last, (2, 2), "black")
+
+            result = stack_vertical({
+                "input_paths": [str(first), str(last)],
+                "output_naming": "source",
+            })
+
+            self.assertEqual(
+                Path(result["outputs"]["files"][0]),
+                first_folder / "ending.png",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,7 @@ from imgtools.service.preferences import (
     PreferenceValidationError,
     get_preferences_view,
     record_successful_run,
+    update_output_naming,
     update_pdf_default_dpi,
     update_pinned_actions,
 )
@@ -42,13 +43,15 @@ def handle_get_preferences() -> dict[str, Any]:
 
 def handle_update_preferences(payload: dict[str, Any]) -> dict[str, Any]:
     try:
-        if "pdf_default_dpi" in payload:
+        if "output_naming" in payload:
+            view = update_output_naming(payload["output_naming"])
+        elif "pdf_default_dpi" in payload:
             view = update_pdf_default_dpi(payload["pdf_default_dpi"])
         elif "pinned_actions" in payload:
             view = update_pinned_actions(payload["pinned_actions"])
         else:
             raise PreferenceValidationError(
-                "Provide pinned_actions or pdf_default_dpi"
+                "Provide pinned_actions, pdf_default_dpi, or output_naming"
             )
         return {"ok": True, **view}
     except PreferenceValidationError as exc:

@@ -15,15 +15,14 @@ const CATEGORY_ICONS = {
   watermark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 12 4l8 14M7 13h10M6 21h12"/></svg>',
 };
 
-const OUTPUT_NAMING_STORAGE_KEY = 'imgtools.outputNaming';
-
 let tools = [];
 let selected = null;
 let activeCategory = 'all';
 let searchTerm = '';
-let outputNaming = loadOutputNaming();
+let outputNaming = 'fixed';
 let preferences = {
-  pinned_actions: [], usage: {}, quick_actions: [], max_pinned: 8, pdf_default_dpi: 192,
+  pinned_actions: [], usage: {}, quick_actions: [], max_pinned: 8,
+  pdf_default_dpi: 192, output_naming: 'fixed',
 };
 const formState = {};
 const previewImages = new Map();
@@ -88,10 +87,17 @@ async function refreshPreferences() {
         })),
         max_pinned: 8,
         pdf_default_dpi: 192,
+        output_naming: 'fixed',
       };
     }
   }
   syncPdfDefaultDpi();
+  syncOutputNaming();
+}
+
+function syncOutputNaming() {
+  outputNaming = preferences.output_naming === 'source' ? 'source' : 'fixed';
+  renderOutputNaming();
 }
 
 function syncPdfDefaultDpi() {
@@ -140,26 +146,29 @@ async function savePdfDefaultDpi(event) {
   }
 }
 
-function loadOutputNaming() {
-  try {
-    const saved = window.localStorage.getItem(OUTPUT_NAMING_STORAGE_KEY);
-    return saved === 'source' ? 'source' : 'fixed';
-  } catch (_error) {
-    return 'fixed';
-  }
-}
-
-function setOutputNaming(mode) {
+async function setOutputNaming(mode) {
   if (!['fixed', 'source'].includes(mode) || mode === outputNaming) return;
   saveFormState();
+  const previous = outputNaming;
   outputNaming = mode;
-  try {
-    window.localStorage.setItem(OUTPUT_NAMING_STORAGE_KEY, mode);
-  } catch (_error) {
-    // The setting still applies for this session when storage is unavailable.
-  }
   renderOutputNaming();
   renderForm();
+  try {
+    const response = await fetch('/api/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ output_naming: mode }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.message || '無法保存預設檔名設定');
+    preferences = data;
+    syncOutputNaming();
+  } catch (error) {
+    outputNaming = previous;
+    renderOutputNaming();
+    renderForm();
+    setStatus(`保存檔名設定失敗：${error.message}`, false);
+  }
 }
 
 function renderOutputNaming() {

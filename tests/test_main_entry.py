@@ -11,9 +11,8 @@ class MainEntryTests(unittest.TestCase):
 
         serve.assert_called_once_with(
             "127.0.0.1",
-            8765,
+            5858,
             open_browser=True,
-            fallback_port=True,
         )
 
 

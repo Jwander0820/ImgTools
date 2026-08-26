@@ -4,11 +4,11 @@ from imgtools.ui.server import serve
 
 
 HOST = "127.0.0.1"
-PORT = 8765
+PORT = 5858
 
 
 def main() -> None:
-    serve(HOST, PORT, open_browser=True, fallback_port=True)
+    serve(HOST, PORT, open_browser=True)
 
 
 if __name__ == "__main__":

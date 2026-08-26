@@ -30,7 +30,7 @@
 
 | 路徑 | 責任 | 維護時機 |
 |---|---|---|
-| `main.py` | 優先啟動 `127.0.0.1:8765` UI；埠不可用時自動 fallback 並開啟瀏覽器的便利入口 | 預設 UI 啟動行為改變時 |
+| `main.py` | 固定啟動 `127.0.0.1:5858` UI 並開啟瀏覽器的便利入口 | 預設 UI 啟動行為改變時 |
 | `imgtools/__main__.py` | `python -m imgtools` 的唯一模組入口 | CLI 啟動方式改變時 |
 | `imgtools/cli.py` | `list`、`describe`、`run`、`ui` 命令 | 新增命令列層級能力時 |
 | `imgtools/service/registry.py` | 所有 action、參數 metadata 與 handler 對應 | 新增／修改工具時必改 |
@@ -51,7 +51,7 @@
 
 ### 3.1 一鍵 UI 入口
 
-從專案根目錄執行 `python main.py`，會呼叫 `imgtools.ui.server.serve("127.0.0.1", 8765, open_browser=True, fallback_port=True)`。若 8765 被作業系統保留或已遭占用，server 會改用由作業系統分配的可用埠；瀏覽器永遠開啟實際綁定的網址。這個檔案只負責提供方便的啟動方式，不承載 UI 或工具邏輯。
+從專案根目錄執行 `python main.py`，會呼叫 `imgtools.ui.server.serve("127.0.0.1", 5858, open_browser=True)`。若 5858 已遭占用，server 會直接回報錯誤，不會靜默改用其他埠。這個檔案只負責提供方便的啟動方式，不承載 UI 或工具邏輯。
 
 ### 3.2 CLI
 
@@ -62,7 +62,7 @@
 | `list` | 輸出所有 `ToolSpec` 的 JSON 陣列 |
 | `describe <action>` | 輸出指定 action metadata |
 | `run <action>` | 以 `--param key=value` 或 `--params-json` 呼叫 runner |
-| `ui` | 啟動本機 UI；預設優先使用 `127.0.0.1:8765`，未指定 `--port` 時允許自動 fallback |
+| `ui` | 啟動本機 UI；預設固定使用 `127.0.0.1:5858`，可用 `--port` 明確改寫 |
 
 ### 3.3 Python
 
@@ -140,7 +140,7 @@ Runner 會補上 `action`，並在預設情況寫入 `manifest_path`。
 6. Core handler 解析實體路徑、處理檔案並回傳結構化結果。
 7. Runner 將成功或失敗寫入 manifest，敏感參數以 `[REDACTED]` 取代。
 
-輸出路徑集中由 `imgtools/core/common.py` 管理。明確路徑預設不可覆寫；隱含路徑遇到衝突會建立 `-2`、`-3`。`output_naming=fixed` 使用 `output.*`，`output_naming=source` 使用來源檔名或來源資料夾名。
+輸出路徑集中由 `imgtools/core/common.py` 管理。明確路徑預設不可覆寫；隱含路徑遇到衝突會建立 `-2`、`-3`。`output_naming=fixed` 使用 `output.*`，`output_naming=source` 使用來源檔名或來源資料夾名；`merge.stack_vertical` 例外採用排序後最後一張圖片的檔名，但仍輸出到第一張圖片旁。UI 的命名模式透過 preferences API 保存到私有狀態檔，不依賴瀏覽器 origin。
 
 狀態根目錄預設是 `data/.imgtools/`：
 

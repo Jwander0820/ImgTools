@@ -10,9 +10,11 @@ from .registry import list_tools
 from .state import state_root
 
 
-PREFERENCES_VERSION = 2
+PREFERENCES_VERSION = 3
 MAX_PINNED_ACTIONS = 8
 DEFAULT_PDF_DPI = 192
+DEFAULT_OUTPUT_NAMING = "fixed"
+OUTPUT_NAMING_MODES = {"fixed", "source"}
 MIN_PDF_DPI = 36
 MAX_PDF_DPI = 1200
 _WRITE_LOCK = threading.Lock()
@@ -78,6 +80,7 @@ def get_preferences_view(tools: list[dict[str, Any]] | None = None) -> dict[str,
         "quick_actions": quick_actions,
         "max_pinned": MAX_PINNED_ACTIONS,
         "pdf_default_dpi": _pdf_default_dpi(data.get("settings", {})),
+        "output_naming": _output_naming(data.get("settings", {})),
     }
 
 
@@ -134,6 +137,18 @@ def get_pdf_default_dpi() -> int:
     return _pdf_default_dpi(_read_preferences().get("settings", {}))
 
 
+def update_output_naming(
+    value: Any,
+    tools: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    output_naming = _validate_output_naming(value)
+    with _WRITE_LOCK:
+        data = _read_preferences()
+        data["settings"]["output_naming"] = output_naming
+        _write_preferences(data)
+    return get_preferences_view(tools)
+
+
 def preferences_path() -> Path:
     return state_root() / "preferences.json"
 
@@ -157,6 +172,7 @@ def _read_preferences() -> dict[str, Any]:
         "usage": usage if isinstance(usage, dict) else {},
         "settings": {
             "pdf_default_dpi": _pdf_default_dpi(settings),
+            "output_naming": _output_naming(settings),
         },
     }
 
@@ -177,7 +193,10 @@ def _empty_preferences() -> dict[str, Any]:
         "version": PREFERENCES_VERSION,
         "pinned_actions": [],
         "usage": {},
-        "settings": {"pdf_default_dpi": DEFAULT_PDF_DPI},
+        "settings": {
+            "pdf_default_dpi": DEFAULT_PDF_DPI,
+            "output_naming": DEFAULT_OUTPUT_NAMING,
+        },
     }
 
 
@@ -202,6 +221,19 @@ def _pdf_default_dpi(settings: Any) -> int:
         return _validate_pdf_default_dpi(settings.get("pdf_default_dpi", DEFAULT_PDF_DPI))
     except PreferenceValidationError:
         return DEFAULT_PDF_DPI
+
+
+def _validate_output_naming(value: Any) -> str:
+    if not isinstance(value, str) or value not in OUTPUT_NAMING_MODES:
+        raise PreferenceValidationError("output_naming must be fixed or source")
+    return value
+
+
+def _output_naming(settings: Any) -> str:
+    if not isinstance(settings, dict):
+        return DEFAULT_OUTPUT_NAMING
+    value = settings.get("output_naming", DEFAULT_OUTPUT_NAMING)
+    return value if value in OUTPUT_NAMING_MODES else DEFAULT_OUTPUT_NAMING
 
 
 def _successful_runs(item: Any) -> int:

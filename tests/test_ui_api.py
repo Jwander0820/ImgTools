@@ -79,6 +79,19 @@ class UIAPITests(unittest.TestCase):
         self.assertTrue(result["ok"])
         update.assert_called_once_with(["gif.images_to_gif"])
 
+    def test_api_updates_output_naming_preference(self):
+        from imgtools.ui.api import handle_update_preferences
+
+        with patch(
+            "imgtools.ui.api.update_output_naming",
+            return_value={"output_naming": "source"},
+        ) as update:
+            result = handle_update_preferences({"output_naming": "source"})
+
+        update.assert_called_once_with("source")
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["output_naming"], "source")
+
     def test_api_updates_pdf_default_dpi_without_requiring_pins(self):
         from imgtools.ui.api import handle_update_preferences
 

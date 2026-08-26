@@ -40,10 +40,8 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "ui":
         from imgtools.ui.server import serve
 
-        if args.port is None:
-            serve(args.host, 8765, open_browser=not args.no_browser, fallback_port=True)
-        else:
-            serve(args.host, args.port, open_browser=not args.no_browser)
+        port = 5858 if args.port is None else args.port
+        serve(args.host, port, open_browser=not args.no_browser)
 
 
 def _collect_params(params_json: str | None, pairs: list[str]) -> dict[str, Any]:

@@ -93,7 +93,7 @@ def stack_vertical(params: dict[str, Any]) -> dict[str, Any]:
                 canvas.paste(image, (0, top))
                 top += image.height
 
-            default_name = f"{default_output_stem(params, paths[0])}.png"
+            default_name = f"{default_output_stem(params, paths[-1])}.png"
             requested_output = params.get("output_path")
             if requested_output and Path(str(requested_output)).suffix.lower() != ".png":
                 raise ValueError("output_path must end in .png")

@@ -22,7 +22,7 @@ class CLITests(unittest.TestCase):
 
         serve.assert_called_once_with("127.0.0.1", 9000, open_browser=False)
 
-    def test_cli_ui_default_port_can_fall_back(self):
+    def test_cli_ui_uses_fixed_default_port(self):
         from imgtools.cli import main
 
         with patch("imgtools.ui.server.serve") as serve:
@@ -30,9 +30,8 @@ class CLITests(unittest.TestCase):
 
         serve.assert_called_once_with(
             "127.0.0.1",
-            8765,
+            5858,
             open_browser=False,
-            fallback_port=True,
         )
 
 

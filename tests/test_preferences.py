@@ -22,8 +22,9 @@ class PreferenceTests(unittest.TestCase):
         example = root / "examples" / "preferences.example.json"
         self.assertTrue(example.is_file())
         data = json.loads(example.read_text(encoding="utf-8"))
-        self.assertEqual(data["version"], 2)
+        self.assertEqual(data["version"], 3)
         self.assertEqual(data["settings"]["pdf_default_dpi"], 192)
+        self.assertEqual(data["settings"]["output_naming"], "fixed")
 
     def test_missing_file_uses_registry_defaults_without_creating_state(self):
         from imgtools.service.preferences import get_preferences_view
@@ -83,10 +84,11 @@ class PreferenceTests(unittest.TestCase):
             path = Path(tmp) / "preferences.json"
             self.assertTrue(path.is_file())
             data = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(data["version"], 2)
+            self.assertEqual(data["version"], 3)
             self.assertEqual(data["pinned_actions"], ["tool.pinned"])
             self.assertEqual(data["usage"], {})
             self.assertEqual(data["settings"]["pdf_default_dpi"], 192)
+            self.assertEqual(data["settings"]["output_naming"], "fixed")
 
     def test_pdf_default_dpi_is_persisted_without_resetting_pins(self):
         from imgtools.service.preferences import (
@@ -123,10 +125,11 @@ class PreferenceTests(unittest.TestCase):
 
             data = json.loads(state_path.read_text(encoding="utf-8"))
             self.assertEqual(before["pdf_default_dpi"], 192)
-            self.assertEqual(data["version"], 2)
+            self.assertEqual(data["version"], 3)
             self.assertEqual(data["pinned_actions"], ["tool.pinned"])
             self.assertEqual(data["usage"]["tool.other"]["successful_runs"], 2)
             self.assertEqual(data["settings"]["pdf_default_dpi"], 240)
+            self.assertEqual(data["settings"]["output_naming"], "fixed")
 
     def test_invalid_pdf_default_dpi_is_rejected(self):
         from imgtools.service.preferences import PreferenceValidationError, update_pdf_default_dpi
@@ -136,6 +139,33 @@ class PreferenceTests(unittest.TestCase):
                 for value in (True, 192.5, "not-a-number", 35, 1201):
                     with self.subTest(value=value), self.assertRaises(PreferenceValidationError):
                         update_pdf_default_dpi(value, TOOLS)
+
+    def test_output_naming_is_persisted_without_resetting_other_preferences(self):
+        from imgtools.service.preferences import (
+            update_output_naming,
+            update_pdf_default_dpi,
+            update_pinned_actions,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": tmp}):
+                update_pinned_actions(["tool.pinned"], TOOLS)
+                update_pdf_default_dpi(300, TOOLS)
+                result = update_output_naming("source", TOOLS)
+
+            data = json.loads((Path(tmp) / "preferences.json").read_text(encoding="utf-8"))
+            self.assertEqual(result["output_naming"], "source")
+            self.assertEqual(data["settings"]["output_naming"], "source")
+            self.assertEqual(data["settings"]["pdf_default_dpi"], 300)
+            self.assertEqual(data["pinned_actions"], ["tool.pinned"])
+
+    def test_invalid_output_naming_is_rejected(self):
+        from imgtools.service.preferences import PreferenceValidationError, update_output_naming
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": tmp}):
+                with self.assertRaises(PreferenceValidationError):
+                    update_output_naming("surprise", TOOLS)
 
     def test_unknown_or_too_many_pins_are_rejected(self):
         from imgtools.service.preferences import PreferenceValidationError, update_pinned_actions

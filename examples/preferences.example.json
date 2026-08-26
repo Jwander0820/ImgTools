@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "pinned_actions": [
     "gif.images_to_gif",
     "watermark.text"
@@ -11,6 +11,7 @@
     }
   },
   "settings": {
-    "pdf_default_dpi": 192
+    "pdf_default_dpi": 192,
+    "output_naming": "fixed"
   }
 }
