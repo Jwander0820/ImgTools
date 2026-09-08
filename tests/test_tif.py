@@ -91,6 +91,25 @@ class TifTests(unittest.TestCase):
                 image.seek(1)
                 self.assertEqual(image.convert("RGB").getpixel((0, 0)), (0, 0, 255))
 
+    def test_images_to_tif_source_mode_uses_last_sorted_image_stem(self):
+        from imgtools.core.tif import images_to_tif
+
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "images"
+            folder.mkdir()
+            Image.new("RGB", (8, 6), "blue").save(folder / "02-ending.png")
+            Image.new("RGB", (8, 6), "red").save(folder / "01-opening.png")
+
+            result = images_to_tif({
+                "folder_path": str(folder),
+                "output_naming": "source",
+            })
+
+            self.assertEqual(
+                Path(result["outputs"]["files"][0]),
+                folder / "02-ending.tif",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,7 @@ from typing import Any
 from .common import (
     abs_path,
     default_output_stem,
+    default_sequence_output_stem,
     ensure_not_exists,
     resolve_output_directory,
     resolve_output_path,
@@ -85,23 +86,31 @@ def images_to_tif(params: dict[str, Any]) -> dict[str, Any]:
     if not folder_path.is_dir():
         raise NotADirectoryError(f"Input folder does not exist: {folder_path}")
 
-    overwrite = bool(params.get("overwrite", False))
-    output_path = resolve_output_path(
-        params.get("output_path"),
-        folder_path / f"{default_output_stem(params, folder_path)}.tif",
-        overwrite=overwrite,
+    requested_output = params.get("output_path")
+    using_default_output = not requested_output
+    explicit_output = (
+        Path(str(requested_output)).expanduser().resolve()
+        if requested_output
+        else None
     )
-    using_default_output = not params.get("output_path")
     input_paths = sorted(
         path
         for path in folder_path.iterdir()
         if path.is_file()
         and path.suffix.lower() in SUPPORTED_IMAGE_SUFFIXES
-        and path.resolve() != output_path
+        and path.resolve() != explicit_output
         and not (using_default_output and _is_generated_default_tif(path))
     )
     if not input_paths:
         raise ValueError(f"No supported images found in: {folder_path}")
+
+    overwrite = bool(params.get("overwrite", False))
+    output_path = resolve_output_path(
+        requested_output,
+        folder_path / f"{default_sequence_output_stem(params, input_paths)}.tif",
+        overwrite=overwrite,
+        protected_paths=tuple(input_paths),
+    )
 
     color_mode = str(params.get("color_mode", "RGB"))
     compression = str(params.get("compression", "tiff_lzw"))

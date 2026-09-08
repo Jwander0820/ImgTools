@@ -88,6 +88,10 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(params["input_paths"]["min_items"], 2)
         self.assertEqual(params["input_paths"]["max_items"], 9)
         self.assertIn("由上到下", params["input_paths"]["description"])
+        self.assertEqual(
+            params["output_path"]["source_default_hint"],
+            "第一張圖片旁的 <最後一張檔名>.png",
+        )
 
     def test_dialogue_stack_exposes_interactive_preview_parameters(self):
         from imgtools.service.registry import get_tool
@@ -99,6 +103,10 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(params["input_paths"].max_items, 12)
         self.assertEqual(params["subtitle_top_ratio"].default, 0.88)
         self.assertEqual(params["line_spacing"].default, 85)
+        self.assertEqual(
+            params["output_path"].source_default_hint,
+            "第一張圖片旁的 <最後一張檔名>.png",
+        )
 
     def test_registry_exposes_quick_actions_and_progressive_fields(self):
         from imgtools.service.registry import get_tool, list_tools
@@ -117,9 +125,17 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(gif_params["output_path"]["default_hint"], "同資料夾的 output.gif")
         self.assertEqual(
             gif_params["output_path"]["source_default_hint"],
-            "同資料夾的 <資料夾名稱>.gif",
+            "同資料夾的 <排序後最後一張檔名>.gif",
         )
         self.assertEqual(gif_params["folder_path"]["label"], "圖片資料夾")
+        tif_params = {
+            param["name"]: param
+            for param in get_tool("merge.images_to_tif").to_dict()["params"]
+        }
+        self.assertEqual(
+            tif_params["output_path"]["source_default_hint"],
+            "同資料夾的 <排序後最後一張檔名>.tif",
+        )
         frame_params = {
             param["name"]: param
             for param in get_tool("video.extract_frames").to_dict()["params"]

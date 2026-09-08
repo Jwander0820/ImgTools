@@ -300,6 +300,31 @@ class PanoramaTranslationTests(unittest.TestCase):
             self.assertEqual(Path(result["outputs"]["files"][0]), output.with_name("output-2.png"))
             self.assertEqual(output.read_bytes(), b"existing")
 
+    def test_source_naming_uses_last_image_in_selected_segment(self):
+        from imgtools.core.merge import PairMatch, panorama_translation
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = [root / "opening.png", root / "middle.png", root / "ending.png"]
+            for path in paths:
+                _write_image(path, np.zeros((40, 60, 3), dtype=np.uint8))
+            matches = [
+                PairMatch(matched=True, dx=10.0, dy=0.0, inliers=20, candidates=20, inlier_ratio=1.0),
+                PairMatch(matched=False),
+            ]
+
+            with patch("imgtools.core.merge.estimate_translation", side_effect=matches):
+                result = panorama_translation({
+                    "input_paths": [str(path) for path in paths],
+                    "output_naming": "source",
+                    "allow_low_confidence": False,
+                })
+
+            self.assertEqual(
+                Path(result["outputs"]["files"][0]),
+                root / "stitched" / "middle.png",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

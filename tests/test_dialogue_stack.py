@@ -85,6 +85,34 @@ class DialogueStackTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertIn("same dimensions", result["message"])
 
+    def test_source_naming_uses_last_image_stem_beside_first_image(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            first_folder = root / "first-folder"
+            last_folder = root / "last-folder"
+            first_folder.mkdir()
+            last_folder.mkdir()
+            first = first_folder / "opening.png"
+            last = last_folder / "ending.jpg"
+            Image.new("RGB", (8, 10), "white").save(first)
+            Image.new("RGB", (8, 10), "black").save(last)
+
+            with patch("imgtools.service.runner.write_manifest", return_value=None):
+                result = run_tool(
+                    "merge.dialogue_stack",
+                    {
+                        "input_paths": [str(first), str(last)],
+                        "output_naming": "source",
+                        "line_spacing": 1,
+                    },
+                )
+
+            self.assertTrue(result["ok"], result)
+            self.assertEqual(
+                Path(result["outputs"]["files"][0]),
+                first_folder / "ending.png",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

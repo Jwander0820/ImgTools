@@ -30,6 +30,16 @@ def default_output_stem(params: dict[str, object], source_path: str | Path) -> s
     return "output"
 
 
+def default_sequence_output_stem(
+    params: dict[str, object],
+    source_paths: list[str | Path] | tuple[str | Path, ...],
+) -> str:
+    """Return an implicit output stem based on the final ordered source."""
+    if not source_paths:
+        raise ValueError("source_paths must contain at least one path")
+    return default_output_stem(params, source_paths[-1])
+
+
 def resolve_output_path(
     value: str | Path | None,
     default_path: str | Path,

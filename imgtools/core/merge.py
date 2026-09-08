@@ -5,7 +5,12 @@ from pathlib import Path
 import re
 from typing import Any
 
-from .common import abs_path, default_output_stem, resolve_output_path
+from .common import (
+    abs_path,
+    default_output_stem,
+    default_sequence_output_stem,
+    resolve_output_path,
+)
 
 
 @dataclass(frozen=True)
@@ -93,7 +98,7 @@ def stack_vertical(params: dict[str, Any]) -> dict[str, Any]:
                 canvas.paste(image, (0, top))
                 top += image.height
 
-            default_name = f"{default_output_stem(params, paths[-1])}.png"
+            default_name = f"{default_sequence_output_stem(params, paths)}.png"
             requested_output = params.get("output_path")
             if requested_output and Path(str(requested_output)).suffix.lower() != ".png":
                 raise ValueError("output_path must end in .png")
@@ -185,7 +190,7 @@ def dialogue_stack(params: dict[str, Any]) -> dict[str, Any]:
                     finally:
                         band.close()
 
-                default_name = f"{default_output_stem(params, paths[0])}.png"
+                default_name = f"{default_sequence_output_stem(params, paths)}.png"
                 requested_output = params.get("output_path")
                 if requested_output and Path(str(requested_output)).suffix.lower() != ".png":
                     raise ValueError("output_path must end in .png")
@@ -277,7 +282,9 @@ def panorama_translation(params: dict[str, Any]) -> dict[str, Any]:
         panorama = _overwrite_compose(selected_images, positions)
     output_path = resolve_output_path(
         None,
-        paths[0].parent / "stitched" / f"{default_output_stem(params, paths[0])}.png",
+        paths[0].parent
+        / "stitched"
+        / f"{default_sequence_output_stem(params, selected_paths)}.png",
         overwrite=bool(params.get("overwrite", False)),
     )
     ok, encoded = cv2.imencode(".png", panorama)

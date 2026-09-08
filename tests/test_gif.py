@@ -54,6 +54,25 @@ class GifTests(unittest.TestCase):
             self.assertTrue((folder / "output.gif").is_file())
             self.assertTrue((folder / "output-2.gif").is_file())
 
+    def test_images_to_gif_source_mode_uses_last_sorted_image_stem(self):
+        from imgtools.core.gif import images_to_gif
+
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "frames"
+            folder.mkdir()
+            Image.new("RGB", (8, 8), "blue").save(folder / "02-ending.png")
+            Image.new("RGB", (8, 8), "red").save(folder / "01-opening.png")
+
+            result = images_to_gif({
+                "folder_path": str(folder),
+                "output_naming": "source",
+            })
+
+            self.assertEqual(
+                Path(result["outputs"]["files"][0]),
+                folder / "02-ending.gif",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

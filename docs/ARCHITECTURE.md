@@ -140,7 +140,7 @@ Runner 會補上 `action`，並在預設情況寫入 `manifest_path`。
 6. Core handler 解析實體路徑、處理檔案並回傳結構化結果。
 7. Runner 將成功或失敗寫入 manifest，敏感參數以 `[REDACTED]` 取代。
 
-輸出路徑集中由 `imgtools/core/common.py` 管理。明確路徑預設不可覆寫；隱含路徑遇到衝突會建立 `-2`、`-3`。`output_naming=fixed` 使用 `output.*`，`output_naming=source` 使用來源檔名或來源資料夾名；`merge.stack_vertical` 例外採用排序後最後一張圖片的檔名，但仍輸出到第一張圖片旁。UI 的命名模式透過 preferences API 保存到私有狀態檔，不依賴瀏覽器 origin。
+輸出路徑集中由 `imgtools/core/common.py` 管理。明確路徑預設不可覆寫；隱含路徑遇到衝突會建立 `-2`、`-3`。`output_naming=fixed` 使用 `output.*`；單一來源的 `output_naming=source` 使用來源檔名或來源資料夾名。由多張圖片合成單一圖片檔時，`default_sequence_output_stem()` 統一採用實際合成順序中最後一張圖片的檔名，資料夾型輸入則以排序後最後一張命名；輸出資料夾維持各 action 原本的位置。UI 的命名模式透過 preferences API 保存到私有狀態檔，不依賴瀏覽器 origin。
 
 狀態根目錄預設是 `data/.imgtools/`：
 
