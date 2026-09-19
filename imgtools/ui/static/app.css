@@ -511,22 +511,22 @@ svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: 
 .watermark-advanced-grid { display: grid; gap: 16px; padding: 15px; }
 .watermark-advanced-grid .field-label { font-size: 11px; }
 .watermark-direct-input { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; outline: none; color: var(--ink); background: #fcfdfd; font: 700 12px var(--font-mono); }
-.watermark-direct-input:focus { border-color: #6d45ff; box-shadow: 0 0 0 3px rgba(109, 69, 255, .13); }
+.watermark-direct-input:focus { border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(36, 82, 199, .13); }
 .watermark-number-control { display: contents; }
 .watermark-number-control input { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; outline: none; font: 700 12px var(--font-mono); }
 .watermark-number-control b { display: none; }
 .watermark-color-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 15px; color: var(--muted); font-size: 10px; font-weight: 750; }
 .watermark-color-control { display: inline-flex; align-items: center; gap: 8px; }
 .watermark-color-control input[type="color"] { width: 42px; min-height: 30px; height: 30px; padding: 2px; border: 1px solid var(--line-strong); border-radius: 7px; background: white; cursor: pointer; }
-.watermark-color-control code { color: #6d45ff; font: 800 10px var(--font-mono); }
+.watermark-color-control code { color: var(--cobalt); font: 800 10px var(--font-mono); }
 .watermark-swatches { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
 .watermark-swatch { width: 23px; height: 23px; padding: 0; border: 2px solid white; border-radius: 50%; background: var(--swatch-color); box-shadow: 0 0 0 1px #cad3d8; cursor: pointer; }
-.watermark-swatch:hover, .watermark-swatch.active { box-shadow: 0 0 0 2px #6d45ff; transform: translateY(-1px); }
-.watermark-toggle-field { display: flex; align-items: center; gap: 9px; margin-top: 15px; padding: 10px; border: 1px solid #e0dafe; border-radius: 8px; color: #36217f; background: #f7f5ff; cursor: pointer; }
-.watermark-toggle-field input { width: 16px; height: 16px; accent-color: #6d45ff; }
+.watermark-swatch:hover, .watermark-swatch.active { box-shadow: 0 0 0 2px var(--cobalt); transform: translateY(-1px); }
+.watermark-toggle-field { display: flex; align-items: center; gap: 9px; margin-top: 15px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--cobalt-dark); background: var(--cobalt-soft); cursor: pointer; }
+.watermark-toggle-field input { width: 16px; height: 16px; accent-color: var(--cobalt); }
 .watermark-toggle-field span { display: grid; gap: 2px; }
 .watermark-toggle-field strong { font-size: 10px; }
-.watermark-toggle-field small { color: #7466a7; font-size: 9px; font-weight: 500; }
+.watermark-toggle-field small { color: var(--muted); font-size: 9px; font-weight: 500; }
 .watermark-repeat-spacing-field[hidden] { display: none; }
 
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid rgba(36, 82, 199, .42); outline-offset: 2px; }

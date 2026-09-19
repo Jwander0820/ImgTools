@@ -7,7 +7,8 @@
   <title>ImgTools｜本機影像工作桌</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232452c7'/%3E%3Cpath d='M7 9h18v14H7zm3 10 4-4 3 3 2-2 3 3' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/app.css">
-  <script src="/static/app.js" defer></script>
+  <link rel="stylesheet" href="/static/layout.css">
+  <script src="/static/app.js" type="module"></script>
 </head>
 <body>
   <a class="skip-link" href="#workbench">跳到目前工具</a>
@@ -33,19 +34,20 @@
         </div>
         <div class="server-state" title="檔案不會上傳到網路">
           <span aria-hidden="true"></span>
-          <div><strong>Local server</strong><small>檔案留在這台電腦</small></div>
+          <div><strong>本機處理</strong><small>檔案留在這台電腦</small></div>
         </div>
       </div>
     </header>
 
     <main class="workspace">
       <aside class="tool-shelf" aria-label="完整工具庫">
+        <button id="library-toggle" class="library-toggle" type="button" aria-expanded="false" aria-controls="library-content">選擇工具 <span>展開工具庫</span></button>
+        <div id="library-content">
         <div class="shelf-heading">
-          <p class="eyebrow">Tool library</p>
           <div class="shelf-title"><h2>所有工具</h2><span id="tool-count">0</span></div>
           <label class="search-box" for="tool-search">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
-            <input id="tool-search" type="search" placeholder="搜尋工具名稱或指令" autocomplete="off">
+            <input id="tool-search" type="search" aria-label="搜尋工具" placeholder="搜尋工具名稱或指令" autocomplete="off">
           </label>
           <div id="category-filters" class="category-filters" aria-label="工具分類"></div>
         </div>
@@ -54,17 +56,16 @@
           <strong>找不到工具</strong>
           <span>換個關鍵字或切回全部分類。</span>
         </div>
+        </div>
       </aside>
 
       <section class="studio">
         <section class="quickstart" aria-labelledby="quick-title">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Quick strip</p>
-              <h1 id="quick-title">常用功能，直接開始</h1>
+              <h2 id="quick-title">常用工具</h2>
             </div>
             <div class="quick-heading-side">
-              <p>釘選優先，其餘依成功執行頻率與系統預設補上。</p>
               <button id="quick-settings" class="quick-settings-button" type="button" aria-label="管理常用功能" aria-expanded="false" aria-controls="quick-action-editor">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.4 5.1 5.6.7-4.1 3.9 1.1 5.5-5-2.7-5 2.7 1.1-5.5L4 8.8l5.6-.7z"/></svg>
                 <span>管理常用功能</span>
@@ -82,15 +83,22 @@
           <div id="quick-actions" class="quick-actions" aria-label="常用功能"></div>
         </section>
 
+        <section id="job-tray" class="job-tray" aria-label="任務佇列" hidden>
+          <div class="job-heading"><strong id="job-summary" role="status"></strong><button id="retry-jobs" type="button" hidden>重新連線／確認送出</button></div>
+          <p id="job-error" role="status"></p>
+          <div id="active-jobs"></div>
+          <details class="job-history"><summary>最近任務</summary><div id="job-history"></div></details>
+        </section>
+
         <div class="task-grid">
           <section id="workbench" class="workbench" aria-labelledby="tool-title">
             <div id="tool-intro" class="tool-intro">
               <div>
                 <div class="tool-kicker"><span id="tool-category">—</span><span id="danger-badge"></span></div>
-                <h2 id="tool-title">載入工具中…</h2>
+                <h1 id="tool-title">載入工具中…</h1>
                 <p id="tool-description">正在讀取本機工具清單。</p>
               </div>
-              <code id="tool-action">—</code>
+              <details class="tool-command"><summary>工具指令</summary><code id="tool-action">—</code></details>
             </div>
             <div id="pdf-default-setting" class="pdf-preference" hidden>
               <div>
@@ -106,9 +114,9 @@
             <form id="form" class="tool-form"></form>
           </section>
 
-          <aside class="output-drawer" aria-label="執行結果">
+          <aside id="output-panel" class="output-drawer" aria-label="執行結果" hidden>
             <div class="output-heading">
-              <div><p class="eyebrow">Latest run</p><h2>執行結果</h2></div>
+              <div><h2>執行結果</h2><p id="result-tool"></p></div>
               <span id="status" class="status idle" role="status"><i></i>等待執行</span>
             </div>
             <div id="result-summary" class="result-summary" aria-live="polite">
@@ -127,6 +135,8 @@
         </div>
       </section>
     </main>
+    <footer id="actionbar" class="actions actionbar" aria-label="目前工具操作"></footer>
+    <div id="notice" class="notice" role="status" hidden></div>
   </div>
 </body>
 </html>

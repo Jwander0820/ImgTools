@@ -35,6 +35,8 @@
 | `imgtools/cli.py` | `list`、`describe`、`run`、`ui` 命令 | 新增命令列層級能力時 |
 | `imgtools/service/registry.py` | 所有 action、參數 metadata 與 handler 對應 | 新增／修改工具時必改 |
 | `imgtools/service/runner.py` | 驗證、型別轉換、安全預設、統一結果、manifest | 所有入口都需要的新執行規則 |
+| `imgtools/service/jobs.py` | 本機 UI 單工佇列、重試去重、任務狀態與取消 | 任務生命週期改變時 |
+| `imgtools/service/execution.py` | 可選進度回報、取消檢查、已完成輸出追蹤 | core 加入長任務回報時 |
 | `imgtools/service/schemas.py` | 將 `ToolSpec` 轉成可供外部讀取的 schema | schema contract 改變時 |
 | `imgtools/service/safety.py` | 共用覆寫與高風險預設 | 新增破壞性能力前 |
 | `imgtools/service/preferences.py` | 常用 actions、使用次數、PDF DPI | UI 偏好改變時 |
@@ -89,11 +91,25 @@ result = run_tool(
 | `GET` | `/api/tools/<action>` | 取得單一工具 metadata |
 | `GET` | `/api/preferences` | 取得 UI 偏好與常用工具 |
 | `POST` | `/api/run` | `{action, params}` 執行工具 |
+| `GET / POST` | `/api/jobs` | GET 回傳精簡任務摘要與 `session_id`；新增附上 `request_id` 去重與 `session_id` 核對服務 |
+| `GET` | `/api/jobs/<id>` | 取得任務進度、耗時與結果 |
+| `POST` | `/api/jobs/cancel` | `{job_id}` 取消等待或執行中的任務 |
+| `POST` | `/api/open` | `{job_id, path, mode}` 開啟該任務的輸出；mode 為 `file` 或 `folder` |
 | `POST` | `/api/pick` | 開啟 Windows 本機檔案選擇器 |
 | `POST` | `/api/preview` | 將 UI 輸入的本機圖片路徑轉成瀏覽器可顯示的縮圖資料 |
 | `POST` | `/api/preferences` | 更新 `pinned_actions` 或 `pdf_default_dpi` |
 
 這是沒有驗證機制的本機 interface，預設只應綁定 loopback，不應直接公開到網路。
+
+UI 的非同步任務仍透過 `handle_run()` → `run_tool()` 執行，與 CLI/Python 共用驗證和 manifest。單個服務程序的 runner 以鎖序列化；UI 最多容納 16 個未完成任務。`ExecutionContext` 透過 context variable 傳入可選進度與取消事件，core 不需知道 HTTP 或 UI。取消及失敗會回傳已完成輸出的路徑；不自動刪除使用者檔案。影片輸出先暫存再發布。改名的執行階段不提供取消。
+
+服務保留最多 50 個已結束任務的完整結果，輪詢只傳摘要；需要顯示結果時再讀取單筆。請求 ID 與內容雜湊保留到服務結束，結果過期後仍拒絕重複執行。重啟後舊的 `session_id` 會被拒絕，使用者須先核對輸出。前端保留連線中斷時的原請求，並忽略晚於新增／取消才抵達的舊輪詢回應。
+
+### 前端模組
+
+前端使用瀏覽器原生 ES modules，無須建置工具：`app.js` 負責啟動、導覽及偏好，`state.mjs` 保存跨工具表單與預覽狀態，`form.mjs` / `fields.mjs` 依 registry 產生表單；`watermark.mjs`、`stack.mjs`、`dialogue.mjs` 各自管理編輯器。`task-store.mjs` 管理任務狀態與網路重試，`jobs.mjs` 顯示任務列；`result-model.mjs` 定義結果語意，`results.mjs` 呈現表格、檔案操作與縮圖。`app.css` 保留編輯器元件樣式，`layout.css` 管理工作台配置和共用字級。
+
+新增工具時，除了參數表單也應確認其結果型別有對應顯示。避免讓非檔案結果只出現在原始 JSON。
 
 ## 4. Action interface
 
@@ -170,7 +186,8 @@ data/.imgtools/
 |---|---|
 | Registry / ToolSpec | `test_registry.py`、`test_schemas.py` |
 | Runner / validation | `test_runner.py`、`test_safety.py` |
-| HTTP / UI | `test_ui_api.py`、`test_ui_server.py` |
+| HTTP / UI | `test_ui_api.py`、`test_ui_server.py`、`test_job_http.py`、`frontend.test.mjs` |
+| 任務佇列 / 取消 | `test_jobs.py` |
 | Output naming | `test_output_defaults.py` |
 | Preferences | `test_preferences.py` |
 | 單一處理工具 | 對應的 `test_<category>.py` |
@@ -182,6 +199,7 @@ data/.imgtools/
 python -m unittest discover -s tests
 python -m compileall imgtools tests
 python -m imgtools list
+node --test tests/frontend.test.mjs
 rg -n -i "legacy|pdf_dpi_conversion_tools|merge_img_to_one_pdf" imgtools examples README.md requirements.txt
 ```
 

@@ -52,7 +52,7 @@ class UIServerTests(unittest.TestCase):
     def test_frontend_exposes_server_pdf_default_dpi(self):
         from imgtools.ui.server import INDEX_HTML, STATIC_DIR
 
-        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        script = "\n".join(path.read_text(encoding="utf-8") for path in sorted(STATIC_DIR.iterdir()) if path.suffix in {".js", ".mjs"})
 
         self.assertIn('id="pdf-default-dpi"', INDEX_HTML)
         workbench = INDEX_HTML.index('id="workbench"')
@@ -65,7 +65,7 @@ class UIServerTests(unittest.TestCase):
     def test_frontend_script_is_schema_driven_and_supports_path_lists(self):
         from imgtools.ui.server import STATIC_DIR
 
-        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        script = "\n".join(path.read_text(encoding="utf-8") for path in sorted(STATIC_DIR.iterdir()) if path.suffix in {".js", ".mjs"})
 
         self.assertIn("selected.params.forEach", script)
         self.assertIn("param.type === 'path_list'", script)
@@ -92,7 +92,7 @@ class UIServerTests(unittest.TestCase):
     def test_frontend_contains_dialogue_stack_interactive_preview(self):
         from imgtools.ui.server import STATIC_DIR
 
-        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        script = "\n".join(path.read_text(encoding="utf-8") for path in sorted(STATIC_DIR.iterdir()) if path.suffix in {".js", ".mjs"})
         styles = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
 
         self.assertIn("function renderDialoguePreview", script)
@@ -104,7 +104,7 @@ class UIServerTests(unittest.TestCase):
     def test_frontend_contains_vertical_stack_input_and_result_previews(self):
         from imgtools.ui.server import STATIC_DIR
 
-        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        script = "\n".join(path.read_text(encoding="utf-8") for path in sorted(STATIC_DIR.iterdir()) if path.suffix in {".js", ".mjs"})
         styles = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
 
         self.assertIn("function isStackVerticalAction", script)
@@ -113,15 +113,15 @@ class UIServerTests(unittest.TestCase):
         self.assertIn("function drawStackVerticalPreview", script)
         self.assertIn("stack-preview-canvas", styles)
         self.assertIn("stack-preview-stage", styles)
-        self.assertIn("function loadResultPreview", script)
-        self.assertIn("data.action === 'merge.stack_vertical'", script)
+        self.assertIn("function renderImages", script)
+        self.assertIn("view.images", script)
         self.assertIn("result-preview-image", styles)
         self.assertIn("result-preview-stage", styles)
 
     def test_frontend_contains_watermark_positioning_editor(self):
         from imgtools.ui.server import STATIC_DIR
 
-        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        script = "\n".join(path.read_text(encoding="utf-8") for path in sorted(STATIC_DIR.iterdir()) if path.suffix in {".js", ".mjs"})
         styles = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
 
         self.assertIn("function renderWatermarkEditor", script)
@@ -146,7 +146,7 @@ class UIServerTests(unittest.TestCase):
     def test_frontend_normalizes_all_local_path_param_types(self):
         from imgtools.ui.server import STATIC_DIR
 
-        script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        script = "\n".join(path.read_text(encoding="utf-8") for path in sorted(STATIC_DIR.iterdir()) if path.suffix in {".js", ".mjs"})
 
         self.assertIn("function normalizeLocalPath(value)", script)
         self.assertIn(".map(normalizeLocalPath)", script)

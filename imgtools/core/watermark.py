@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from imgtools.service.execution import checkpoint, record_output
 
 from .common import abs_path, default_output_stem, resolve_output_directory, resolve_output_path
 
@@ -108,7 +109,9 @@ def add_text(params: dict[str, Any]) -> dict[str, Any]:
     else:
         _alpha_composite_clipped(base, rotated, *position)
 
+    checkpoint('保存浮水印圖片')
     _save_image(base, output_path)
+    record_output(output_path)
     return {
         "ok": True,
         "outputs": {"files": [abs_path(output_path)]},
@@ -132,7 +135,8 @@ def add_text_batch(params: dict[str, Any]) -> dict[str, Any]:
         overwrite=overwrite,
     )
     outputs: list[str] = []
-    for input_path in input_paths:
+    for index, input_path in enumerate(input_paths):
+        checkpoint('加入浮水印', index, len(input_paths))
         suffix = input_path.suffix or ".png"
         output_path = resolve_output_path(
             None,
@@ -184,6 +188,7 @@ def _composite_repeated(base: Any, overlay: Any, position: tuple[int, int], spac
     start_x = position[0] % step_x - step_x
     start_y = position[1] % step_y - step_y
     for y in range(start_y, base.height, step_y):
+        checkpoint('平鋪浮水印')
         for x in range(start_x, base.width, step_x):
             _alpha_composite_clipped(base, overlay, x, y)
 

@@ -7,6 +7,7 @@ from imgtools.core.common import OUTPUT_NAMING_FIXED, OUTPUT_NAMING_MODES
 from .manifest import now_iso, write_manifest
 from .registry import ToolParam, get_tool
 from .safety import default_params_for_safety
+from .execution import RUN_LOCK, ExecutionCancelled, checkpoint, partial_outputs
 
 
 class ToolValidationError(ValueError):
@@ -14,9 +15,15 @@ class ToolValidationError(ValueError):
 
 
 def run_tool(action: str, raw_params: Any, *, manifest: bool = True) -> dict[str, Any]:
+    with RUN_LOCK:
+        return _run_tool(action, raw_params, manifest=manifest)
+
+
+def _run_tool(action: str, raw_params: Any, *, manifest: bool = True) -> dict[str, Any]:
     started_at = now_iso()
     params: dict[str, Any] = {}
     try:
+        checkpoint('驗證輸入')
         if not isinstance(raw_params, dict):
             raise ToolValidationError("params must be an object")
         params = dict(raw_params)
@@ -27,17 +34,22 @@ def run_tool(action: str, raw_params: Any, *, manifest: bool = True) -> dict[str
             params["dpi"] = get_pdf_default_dpi()
         params = _prepare_params(spec.params, params)
         params = default_params_for_safety(spec, params)
+        checkpoint('正在處理')
         result = spec.handler(params)
         result.setdefault("ok", True)
         result.setdefault("action", action)
         result.setdefault("outputs", {})
         result.setdefault("warnings", [])
+    except ExecutionCancelled as exc:
+        result = _error(action, 'CANCELLED', str(exc))
+        result['outputs'] = partial_outputs()
     except ToolValidationError as exc:
         result = _error(action, "VALIDATION_ERROR", str(exc))
     except KeyError as exc:
         result = _error(action, "UNKNOWN_ACTION", str(exc))
     except Exception as exc:
         result = _error(action, getattr(exc, "error_code", exc.__class__.__name__), str(exc))
+        result['outputs'] = partial_outputs()
 
     result["action"] = action
     finished_at = now_iso()

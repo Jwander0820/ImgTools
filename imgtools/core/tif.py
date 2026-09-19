@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from imgtools.service.execution import checkpoint, record_output
 
 from .common import (
     abs_path,
@@ -38,8 +39,10 @@ def split_pages(params: dict[str, Any]) -> dict[str, Any]:
         for output_path in output_paths:
             ensure_not_exists(output_path, overwrite=overwrite)
         for frame_index, output_path in enumerate(output_paths):
+            checkpoint('拆分 TIF 頁面', frame_index, len(output_paths))
             image.seek(frame_index)
             image.copy().save(output_path, compression="tiff_lzw")
+            record_output(output_path)
 
     return {
         "ok": True,
@@ -69,8 +72,10 @@ def extract_page(params: dict[str, Any]) -> dict[str, Any]:
     with Image.open(input_path) as image:
         if page < 1 or page > image.n_frames:
             raise ValueError(f"Page {page} is out of range. Total pages: {image.n_frames}")
+        checkpoint('抽出 TIF 頁面')
         image.seek(page - 1)
         image.copy().save(output_path, compression="tiff_lzw")
+        record_output(output_path)
 
     return {
         "ok": True,
@@ -115,10 +120,12 @@ def images_to_tif(params: dict[str, Any]) -> dict[str, Any]:
     color_mode = str(params.get("color_mode", "RGB"))
     compression = str(params.get("compression", "tiff_lzw"))
     frames = []
-    for input_path in input_paths:
-        with Image.open(input_path) as image:
-            frames.append(image.convert(color_mode).copy())
     try:
+        for index, input_path in enumerate(input_paths):
+            checkpoint('讀取圖片', index, len(input_paths))
+            with Image.open(input_path) as image:
+                frames.append(image.convert(color_mode).copy())
+        checkpoint('編碼輸出圖片')
         frames[0].save(
             output_path,
             format="TIFF",
@@ -126,6 +133,7 @@ def images_to_tif(params: dict[str, Any]) -> dict[str, Any]:
             append_images=frames[1:],
             compression=compression,
         )
+        record_output(output_path)
     finally:
         for frame in frames:
             frame.close()

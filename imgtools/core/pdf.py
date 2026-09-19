@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from imgtools.service.execution import checkpoint, record_output
 
 from .common import (
     abs_path,
@@ -33,7 +34,9 @@ class PDFOperator:
 
         zoom = (dpi or self.STANDARD_DPI) / self.STANDARD_DPI
         pixmap = self.doc[page_number].get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+        checkpoint(f'保存 PDF 第 {page_number + 1} / {self.total_pages} 頁')
         pixmap.save(file_name)
+        record_output(file_name)
 
     def close(self) -> None:
         self.doc.close()
@@ -98,6 +101,7 @@ def render_all_pages(params: dict[str, Any]) -> dict[str, Any]:
         for output_path in output_paths:
             ensure_not_exists(output_path, overwrite=overwrite)
         for page_number, output_path in enumerate(output_paths):
+            checkpoint('轉換 PDF 頁面', page_number, len(output_paths))
             operator.save_page_as_image(page_number, str(output_path), dpi=dpi)
     finally:
         operator.close()

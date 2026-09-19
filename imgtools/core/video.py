@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
+from imgtools.service.execution import checkpoint, record_output
 
 from .common import (
     abs_path,
@@ -42,17 +43,53 @@ def _ffmpeg_executable() -> str:
 
 def _run_ffmpeg(arguments: list[str]) -> None:
     creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    completed = subprocess.run(
-        [_ffmpeg_executable(), "-hide_banner", "-loglevel", "error", *arguments],
-        capture_output=True,
+    checkpoint('啟動影片轉換')
+    process = subprocess.Popen(
+        [_ffmpeg_executable(), "-hide_banner", "-loglevel", "error", '-nostats', '-progress', 'pipe:1', *arguments],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
         errors="replace",
         creationflags=creationflags,
     )
-    if completed.returncode != 0:
-        message = completed.stderr.strip() or "ffmpeg conversion failed"
-        raise MediaConversionError(message)
+    try:
+        while True:
+            try:
+                _, stderr = process.communicate(timeout=.25)
+                break
+            except subprocess.TimeoutExpired as exc:
+                output = exc.output or b''
+                if isinstance(output, bytes):
+                    output = output.decode('utf-8', errors='replace')
+                frames = [line.split('=', 1)[1] for line in output.splitlines() if line.startswith('frame=')]
+                checkpoint(f'影片轉換中，已處理 {frames[-1]} 影格' if frames else '影片轉換中')
+        if process.returncode != 0:
+            raise MediaConversionError(stderr.strip() or 'ffmpeg conversion failed')
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.communicate(timeout=3)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+
+
+def _convert_to_file(arguments: list[str], output_path: Path, *, overwrite: bool) -> None:
+    # Publish only complete conversions; cancellation never truncates an existing output.
+    with tempfile.TemporaryDirectory(prefix='.imgtools-video-', dir=output_path.parent) as folder:
+        temporary = Path(folder) / output_path.name
+        _run_ffmpeg([*arguments, str(temporary)])
+        checkpoint('保存轉換結果')
+        if overwrite:
+            temporary.replace(output_path)
+        else:
+            # Exclusive creation also protects against another process creating
+            # this name after output-path validation. Copy is one safe boundary.
+            with temporary.open('rb') as source, output_path.open('xb') as target:
+                shutil.copyfileobj(source, target)
+        record_output(output_path)
 
 
 def extract_frames(params: dict[str, Any]) -> dict[str, Any]:
@@ -95,11 +132,13 @@ def extract_frames(params: dict[str, Any]) -> dict[str, Any]:
             raise MediaConversionError("No video frames were produced.")
 
         output_paths = []
-        for temporary_frame in temporary_frames:
+        for index, temporary_frame in enumerate(temporary_frames):
+            checkpoint('保存影片影格', index, len(temporary_frames))
             output_path = output_dir / temporary_frame.name
             if output_path.exists() and not overwrite:
                 raise FileExistsError(f"Output already exists: {output_path}")
             temporary_frame.replace(output_path)
+            record_output(output_path)
             output_paths.append(output_path)
     return {
         "ok": True,
@@ -135,7 +174,7 @@ def mp4_to_gif(params: dict[str, Any]) -> dict[str, Any]:
         "[gif_a]palettegen=stats_mode=diff[palette];"
         "[gif_b][palette]paletteuse=dither=sierra2_4a"
     )
-    _run_ffmpeg([
+    _convert_to_file([
         "-y" if overwrite else "-n",
         "-i",
         str(input_path),
@@ -143,8 +182,7 @@ def mp4_to_gif(params: dict[str, Any]) -> dict[str, Any]:
         filter_graph,
         "-loop",
         str(loop),
-        str(output_path),
-    ])
+    ], output_path, overwrite=overwrite)
 
     return {
         "ok": True,
@@ -173,7 +211,7 @@ def gif_to_mp4(params: dict[str, Any]) -> dict[str, Any]:
         "pad=ceil(iw/2)*2:ceil(ih/2)*2:0:0:color=black,"
         "format=yuv420p"
     )
-    _run_ffmpeg([
+    _convert_to_file([
         "-y" if overwrite else "-n",
         "-ignore_loop",
         "1",
@@ -188,8 +226,7 @@ def gif_to_mp4(params: dict[str, Any]) -> dict[str, Any]:
         "yuv420p",
         "-movflags",
         "+faststart",
-        str(output_path),
-    ])
+    ], output_path, overwrite=overwrite)
 
     return {
         "ok": True,

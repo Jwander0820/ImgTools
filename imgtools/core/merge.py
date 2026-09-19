@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 import re
 from typing import Any
+from imgtools.service.execution import checkpoint, record_output
 
 from .common import (
     abs_path,
@@ -52,10 +53,13 @@ def images_to_pdf(params: dict[str, Any]) -> dict[str, Any]:
 
     images = []
     try:
-        for image_path in image_paths:
+        for index, image_path in enumerate(image_paths):
+            checkpoint('讀取圖片', index, len(image_paths))
             with Image.open(image_path) as source:
                 images.append(source.convert("RGB"))
+        checkpoint('合併 PDF')
         images[0].save(output_path, "PDF", save_all=True, append_images=images[1:])
+        record_output(output_path)
     finally:
         for image in images:
             image.close()
@@ -76,7 +80,8 @@ def stack_vertical(params: dict[str, Any]) -> dict[str, Any]:
     paths = [Path(str(path)).expanduser().resolve() for path in raw_paths]
     images = []
     try:
-        for path in paths:
+        for index, path in enumerate(paths):
+            checkpoint('讀取圖片', index, len(paths))
             if not path.is_file():
                 raise FileNotFoundError(f"Input image does not exist: {path}")
             with Image.open(path) as source:
@@ -109,7 +114,9 @@ def stack_vertical(params: dict[str, Any]) -> dict[str, Any]:
                 protected_paths=tuple(paths),
             )
             try:
+                checkpoint('保存合成圖片')
                 canvas.save(output_path, "PNG")
+                record_output(output_path)
             finally:
                 canvas.close()
         finally:
@@ -150,7 +157,8 @@ def dialogue_stack(params: dict[str, Any]) -> dict[str, Any]:
     paths = [Path(str(path)).expanduser().resolve() for path in raw_paths]
     images = []
     try:
-        for path in paths:
+        for index, path in enumerate(paths):
+            checkpoint('讀取圖片', index, len(paths))
             if not path.is_file():
                 raise FileNotFoundError(f"Input image does not exist: {path}")
             with Image.open(path) as source:
@@ -200,7 +208,9 @@ def dialogue_stack(params: dict[str, Any]) -> dict[str, Any]:
                     overwrite=bool(params.get("overwrite", False)),
                     protected_paths=tuple(paths),
                 )
+                checkpoint('保存合成圖片')
                 canvas.save(output_path, "PNG")
+                record_output(output_path)
             finally:
                 canvas.close()
         finally:
@@ -235,7 +245,10 @@ def panorama_translation(params: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("input_paths must contain at least two image paths")
 
     paths = [Path(str(path)).expanduser().resolve() for path in raw_paths]
-    images = [_read_cv_image(path) for path in paths]
+    images = []
+    for index, path in enumerate(paths):
+        checkpoint('讀取長截圖來源', index, len(paths))
+        images.append(_read_cv_image(path))
     shapes = {image.shape for image in images}
     if len(shapes) != 1:
         raise ValueError("All input images must have the same dimensions and channels")
@@ -247,10 +260,10 @@ def panorama_translation(params: dict[str, Any]) -> dict[str, Any]:
     if not 0.0 <= subtitle_crop_ratio < 1.0:
         raise ValueError("subtitle_crop_ratio must be between 0.0 and less than 1.0")
 
-    pair_matches = [
-        estimate_translation(first, second, ignore_bottom_ratio=ignore_bottom_ratio)
-        for first, second in zip(images, images[1:])
-    ]
+    pair_matches = []
+    for index, (first, second) in enumerate(zip(images, images[1:])):
+        checkpoint('比對圖片重疊區域', index, len(images) - 1)
+        pair_matches.append(estimate_translation(first, second, ignore_bottom_ratio=ignore_bottom_ratio))
     recovered_count = 0
     if bool(params.get("allow_low_confidence", True)):
         pair_matches, recovered_count = _recover_timestamp_matches(images, paths, pair_matches)
@@ -287,10 +300,13 @@ def panorama_translation(params: dict[str, Any]) -> dict[str, Any]:
         / f"{default_sequence_output_stem(params, selected_paths)}.png",
         overwrite=bool(params.get("overwrite", False)),
     )
+    checkpoint('編碼長截圖')
     ok, encoded = cv2.imencode(".png", panorama)
     if not ok:
         raise OSError(f"Could not encode panorama output: {output_path}")
+    checkpoint('保存長截圖')
     output_path.write_bytes(encoded.tobytes())
+    record_output(output_path)
 
     skipped_paths = paths[:start] + paths[end:]
     diagnostics = []
@@ -501,6 +517,7 @@ def _translation_consensus(displacements: Any, threshold: float) -> tuple[Any, A
     sample_indexes = np.linspace(0, len(displacements) - 1, sample_count, dtype=int)
     best_mask = np.zeros(len(displacements), dtype=bool)
     for center in displacements[sample_indexes]:
+        checkpoint('計算圖片位移')
         distances = np.linalg.norm(displacements - center, axis=1)
         mask = distances <= threshold
         if np.count_nonzero(mask) > np.count_nonzero(best_mask):

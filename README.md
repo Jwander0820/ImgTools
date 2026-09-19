@@ -35,7 +35,7 @@ python -m venv .venv
 
 ## 使用本機 UI
 
-Windows 可直接雙擊專案根目錄的 `ImgTools.cmd`。它會使用編輯器目前採用的 `%LOCALAPPDATA%\Python\bin\python.exe`，啟動後請保留 CMD 視窗；關閉該視窗就會一併停止 ImgTools 的本機 UI 服務。瀏覽器分頁不會被強制關閉，但停止服務後便無法繼續操作。
+Windows 可直接雙擊專案根目錄的 `ImgTools.cmd`。它會優先使用專案 `.venv\Scripts\python.exe`；沒有專案環境時，才沿用 `%LOCALAPPDATA%\Python\bin\python.exe`。可執行 `ImgTools.cmd --check` 查看選用的 Python 而不啟動服務。啟動後請保留 CMD 視窗；關閉該視窗就會一併停止 ImgTools 的本機 UI 服務。瀏覽器分頁不會被強制關閉，但停止服務後便無法繼續操作。
 
 也可以在專案最外層手動執行：
 
@@ -58,6 +58,10 @@ Windows 可直接雙擊專案根目錄的 `ImgTools.cmd`。它會使用編輯器
 如其他程式必須連到固定埠，請明確傳入 `--port`；明確指定的埠無法使用時會直接回報錯誤，不會靜默改埠。
 
 UI 由 registry 動態產生工具清單與表單，支援選檔、固定／來源檔名模式、常用功能、PDF 預設 DPI、執行結果與 manifest。預設檔名模式保存在 `data/.imgtools/preferences.json`，重新啟動或改用其他 port 時仍會沿用。
+
+常用工具顯示為精簡捷徑，窄視窗的工具庫可展開／收合；主要處理按鈕固定在畫面底部。執行結果會標示來源工具：改名預覽顯示前後對照與衝突，TIF 中繼資料可搜尋，圖片成果可切換縮圖，並可開啟檔案或所在資料夾。
+
+UI 任務依序單工執行，可在切換工具或重新整理頁面後繼續查看佇列、耗時及處理進度。同一工具有未完成任務時會暫停再次送出；不同工具可加入佇列。排隊中的任務可立即取消，執行中的影像任務在安全節點停止，影片轉換會終止 ffmpeg。原生影像編碼等步驟須完成當前步驟才能回應取消；已完成的輸出會保留。改名開始後不可取消，避免只套用部分名稱。任務歷史保留於服務記憶體中（最多 50 個已結束任務）；重啟服務會清除佇列，磁碟上的 manifest 仍保留。
 
 ## 使用 CLI
 
@@ -94,6 +98,7 @@ CLI 輸出為 JSON。`--no-manifest` 可停用該次 manifest；`examples/tasks/
 ```powershell
 & .\.venv\Scripts\python.exe -m unittest discover -s tests
 & .\.venv\Scripts\python.exe -m compileall imgtools tests
+node --test tests/frontend.test.mjs
 ```
 
-架構、所有入口、interface contract、新增工具流程與維護地圖請見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+專案協作規則請見 [AGENTS.md](AGENTS.md)。架構、所有入口、interface contract、新增工具流程與維護地圖請見 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。

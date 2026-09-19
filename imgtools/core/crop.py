@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from typing import Any
+from imgtools.service.execution import checkpoint, record_output
 
 from .common import (
     abs_path,
@@ -87,7 +88,8 @@ def text_regions(params: dict[str, Any]) -> dict[str, Any]:
     for output_path in output_paths:
         ensure_not_exists(output_path, overwrite=overwrite)
 
-    for box, output_path in zip(boxes, output_paths):
+    for index, (box, output_path) in enumerate(zip(boxes, output_paths)):
+        checkpoint('擷取圖片區域', index, len(output_paths))
         x, y, width, height = box
         region_rgb = rgb[y:y + height, x:x + width]
         region_alpha = alpha[y:y + height, x:x + width]
@@ -102,6 +104,7 @@ def text_regions(params: dict[str, Any]) -> dict[str, Any]:
         offset_y = (canvas_height - height) // 2
         canvas[offset_y:offset_y + height, offset_x:offset_x + width] = region
         Image.fromarray(canvas).save(output_path)
+        record_output(output_path)
 
     return {
         "ok": True,

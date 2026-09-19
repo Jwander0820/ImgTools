@@ -8,6 +8,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+from imgtools.service.jobs import JobManager
+from imgtools.ui.output import open_job_output
 
 from imgtools.ui.api import (
     handle_get_preferences,
@@ -25,11 +27,24 @@ INDEX_HTML = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
 STATIC_CONTENT_TYPES = {
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8",
 }
 
 
+class LocalUIServer(ThreadingHTTPServer):
+    def __init__(self, address):
+        super().__init__(address, ImgToolsHandler)
+        self.jobs = JobManager(handle_run)
+
+    def server_close(self):
+        # TCPServer invokes this if binding fails, before jobs is initialized.
+        if hasattr(self, 'jobs'):
+            self.jobs.close()
+        super().server_close()
+
+
 def create_server(host: str = "127.0.0.1", port: int = 5858) -> ThreadingHTTPServer:
-    return ThreadingHTTPServer((host, port), ImgToolsHandler)
+    return LocalUIServer((host, port))
 
 
 def serve(
@@ -88,6 +103,15 @@ class ImgToolsHandler(BaseHTTPRequestHandler):
         if path == "/api/preferences":
             self._send_json(handle_get_preferences())
             return
+        if path == '/api/jobs':
+            self._send_json({'ok': True, 'session_id': self.server.jobs.session_id, 'jobs': self.server.jobs.list()})
+            return
+        if path.startswith('/api/jobs/'):
+            try:
+                self._send_json({'ok': True, 'job': self.server.jobs.get(path.removeprefix('/api/jobs/'))})
+            except KeyError:
+                self._send_json({'ok': False, 'message': '找不到任務；服務可能已重新啟動'}, status=404)
+            return
         if path.startswith("/static/"):
             self._send_static(path.removeprefix("/static/"))
             return
@@ -95,13 +119,28 @@ class ImgToolsHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
-        if path not in {"/api/run", "/api/pick", "/api/preview", "/api/preferences"}:
+        if path not in {"/api/run", "/api/pick", "/api/preview", "/api/preferences", '/api/jobs', '/api/jobs/cancel', '/api/open'}:
             self._send_json({"ok": False, "message": "Not found"}, status=404)
             return
         try:
+            origin = self.headers.get('Origin')
+            if origin and urlparse(origin).netloc != self.headers.get('Host'):
+                self._send_json({'ok': False, 'message': '只接受本機介面的操作'}, status=403)
+                return
             length = int(self.headers.get("Content-Length", "0"))
+            if length < 0 or length > 2 * 1024 * 1024:
+                self._send_json({'ok': False, 'message': '請求內容過大'}, status=413)
+                return
             payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
-            if path == "/api/run":
+            if not isinstance(payload, dict):
+                raise ValueError('請求內容必須是物件')
+            if path == '/api/jobs':
+                result = {'ok': True, 'job': self.server.jobs.submit(payload.get('action'), payload.get('params', {}), request_id=payload.get('request_id'), session_id=payload.get('session_id'))}
+            elif path == '/api/jobs/cancel':
+                result = {'ok': True, 'job': self.server.jobs.cancel(str(payload.get('job_id', '')))}
+            elif path == '/api/open':
+                result = open_job_output(self.server.jobs, payload)
+            elif path == "/api/run":
                 result = handle_run(payload)
             elif path == "/api/preview":
                 result = handle_preview(payload)

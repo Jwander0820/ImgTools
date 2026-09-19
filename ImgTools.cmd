@@ -4,6 +4,8 @@ setlocal
 cd /d "%~dp0"
 title ImgTools UI - Close this window to stop
 
+set "PYTHON_EXE=%~dp0.venv\Scripts\python.exe"
+if exist "%PYTHON_EXE%" goto python_ready
 set "PYTHON_EXE=%LOCALAPPDATA%\Python\bin\python.exe"
 
 if not exist "%PYTHON_EXE%" (
@@ -11,8 +13,15 @@ if not exist "%PYTHON_EXE%" (
     echo   "%PYTHON_EXE%"
     echo.
     echo ImgTools could not start.
-    pause
+    echo Create the project environment with: python -m venv .venv
+    if /I not "%~1"=="--check" pause
     exit /b 1
+)
+
+:python_ready
+if /I "%~1"=="--check" (
+    echo %PYTHON_EXE%
+    exit /b 0
 )
 
 echo ImgTools is starting...

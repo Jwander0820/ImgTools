@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from imgtools.service.execution import checkpoint, record_output
 
 from .common import abs_path, default_sequence_output_stem, resolve_output_path
 
@@ -37,10 +38,12 @@ def images_to_gif(params: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("loop must be 0 or greater")
 
     frames = []
-    for input_path in input_paths:
-        with Image.open(input_path) as image:
-            frames.append(image.convert(color_mode).copy())
     try:
+        for index, input_path in enumerate(input_paths):
+            checkpoint('讀取圖片', index, len(input_paths))
+            with Image.open(input_path) as image:
+                frames.append(image.convert(color_mode).copy())
+        checkpoint('編碼輸出圖片')
         frames[0].save(
             output_path,
             format="GIF",
@@ -50,6 +53,7 @@ def images_to_gif(params: dict[str, Any]) -> dict[str, Any]:
             loop=loop,
             disposal=2,
         )
+        record_output(output_path)
     finally:
         for frame in frames:
             frame.close()
