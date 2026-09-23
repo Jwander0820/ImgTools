@@ -2,6 +2,7 @@ import {mkdir, copyFile, cp} from 'node:fs/promises';
 const root = new URL('./', import.meta.url);
 const dest = new URL('./dist/', root);
 await mkdir(new URL('vendor/', dest), {recursive:true});
+await cp(new URL('icons/',root),new URL('icons/',dest),{recursive:true});
 for (const name of ['index.html','app.css','app.mjs','model.mjs','render.mjs','pdf.mjs','fields.mjs','watermark-editor.mjs']) {
   await copyFile(new URL(name,root),new URL(name,dest));
 }

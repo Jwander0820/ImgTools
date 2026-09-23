@@ -1,0 +1,9 @@
+<svg color="#225c99" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="浮水印">
+  <title>浮水印</title>
+<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M20 10V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h4"/>
+  <path d="m3 16 5-5 2 2"/>
+  <path d="m12 15 2 6 3-5 3 5 2-6"/>
+</g>
+<circle cx="8" cy="7" r="1" fill="currentColor"/>
+</svg>

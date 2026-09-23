@@ -1,0 +1,10 @@
+<svg color="#225c99" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="PDF 單頁轉 PNG">
+  <title>PDF 單頁轉 PNG</title>
+<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M6 21H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l6 6v1"/>
+  <path d="M12 2v6h6"/>
+  <rect x="9" y="12" width="13" height="10" rx="1.5"/>
+  <path d="m9 20 4-4 6 6"/>
+</g>
+<circle cx="18.5" cy="15" r="0.9" fill="currentColor"/>
+</svg>

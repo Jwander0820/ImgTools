@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve, extname, sep} from 'node:path';
 const root = fileURLToPath(new URL('./dist/',import.meta.url));
-const types={'.html':'text/html; charset=utf-8','.css':'text/css','.mjs':'text/javascript','.wasm':'application/wasm','.bcmap':'application/octet-stream'};
+const types={'.html':'text/html; charset=utf-8','.css':'text/css','.mjs':'text/javascript','.svg':'image/svg+xml','.wasm':'application/wasm','.bcmap':'application/octet-stream'};
 const server=createServer(async(req,res)=>{
   try {
     if(req.method!=='GET' && req.method!=='HEAD'){res.writeHead(405).end();return;}

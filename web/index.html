@@ -6,20 +6,20 @@
   <meta name="description" content="在瀏覽器完成台詞疊圖、直向疊圖、浮水印及 PDF 單頁轉 PNG。檔案不會上傳。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; font-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>ImgTools 影像工具</title>
-  <link rel="icon" href="data:,">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="./icons/c-image-controls.svg">
   <link rel="stylesheet" href="./app.css">
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
   <a class="skip" href="#workspace">跳至工作區</a>
-  <header><a class="brand" href="./"><span class="mark" aria-hidden="true">▧</span> ImgTools <span class="edition">WEB</span></a></header>
+  <header><a class="brand" href="./"><img class="brand-icon" src="./icons/c-image-controls.svg" width="32" height="32" alt=""> ImgTools <span class="edition">WEB</span></a></header>
   <main id="workspace">
     <h1 class="sr-only">ImgTools 影像工具</h1>
     <nav aria-label="影像工具" id="tools">
-      <button type="button" data-tool="dialogue" aria-pressed="true"><span aria-hidden="true">▤</span>台詞疊圖</button>
-      <button type="button" data-tool="stack" aria-pressed="false"><span aria-hidden="true">▥</span>直向疊圖</button>
-      <button type="button" data-tool="watermark" aria-pressed="false"><span aria-hidden="true">Aa</span>文字浮水印</button>
-      <button type="button" data-tool="pdf" aria-pressed="false"><span aria-hidden="true">▱</span>PDF 轉 PNG</button>
+      <button type="button" data-tool="dialogue" aria-pressed="true"><img class="tool-icon" src="./icons/dialogue-stack.svg" width="24" height="24" alt="">台詞疊圖</button>
+      <button type="button" data-tool="stack" aria-pressed="false"><img class="tool-icon" src="./icons/vertical-stack.svg" width="24" height="24" alt="">直向疊圖</button>
+      <button type="button" data-tool="watermark" aria-pressed="false"><img class="tool-icon" src="./icons/watermark.svg" width="24" height="24" alt="">文字浮水印</button>
+      <button type="button" data-tool="pdf" aria-pressed="false"><img class="tool-icon" src="./icons/pdf-to-png.svg" width="24" height="24" alt="">PDF 轉 PNG</button>
     </nav>
     <div class="desk">
       <section class="controls" aria-labelledby="tool-title">
