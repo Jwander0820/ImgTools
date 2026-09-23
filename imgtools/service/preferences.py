@@ -24,17 +24,26 @@ class PreferenceValidationError(ValueError):
     pass
 
 
+def _ui_action_names(tools: list[dict[str, Any]]) -> dict[str, str]:
+    return {str(tool["action"]): str(tool.get("ui_replacement") or tool["action"]) for tool in tools}
+
+
 def get_preferences_view(tools: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     tool_list = list_tools() if tools is None else tools
-    actions = [str(tool["action"]) for tool in tool_list]
+    ui_actions = _ui_action_names(tool_list)
+    actions = list(dict.fromkeys(ui_actions.values()))
     known = set(actions)
     data = _read_preferences()
-    pinned = [action for action in data["pinned_actions"] if action in known]
-    usage = {
-        action: item
-        for action, item in data["usage"].items()
-        if action in known and _successful_runs(item) > 0
-    }
+    pinned = list(dict.fromkeys(ui_actions[action] for action in data["pinned_actions"] if action in ui_actions))
+    # Merge only the UI view; stored usage and existing job identities keep their actions.
+    usage: dict[str, dict[str, Any]] = {}
+    for action, item in data["usage"].items():
+        count = _successful_runs(item)
+        if action not in ui_actions or count <= 0:
+            continue
+        current = usage.setdefault(ui_actions[action], {"successful_runs": 0, "last_used_at": ""})
+        current["successful_runs"] += count
+        current["last_used_at"] = max(current["last_used_at"], str(item.get("last_used_at", "")))
 
     quick_actions: list[dict[str, Any]] = []
     added: set[str] = set()
@@ -66,7 +75,7 @@ def get_preferences_view(tools: list[dict[str, Any]] | None = None) -> dict[str,
 
     for tool in tool_list:
         if bool(tool.get("featured", False)):
-            add(str(tool["action"]), "default")
+            add(ui_actions[str(tool["action"])], "default")
 
     return {
         "pinned_actions": pinned,
@@ -89,20 +98,19 @@ def update_pinned_actions(
     tools: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     tool_list = list_tools() if tools is None else tools
-    known = {str(tool["action"]) for tool in tool_list}
+    ui_actions = _ui_action_names(tool_list)
     if not isinstance(pinned_actions, list) or any(
         not isinstance(action, str) for action in pinned_actions
     ):
         raise PreferenceValidationError("pinned_actions must be a list of action names")
-    unique = list(dict.fromkeys(pinned_actions))
+    unknown = [action for action in pinned_actions if action not in ui_actions]
+    if unknown:
+        raise PreferenceValidationError(f"Unknown action: {unknown[0]}")
+    unique = list(dict.fromkeys(ui_actions[action] for action in pinned_actions))
     if len(unique) > MAX_PINNED_ACTIONS:
         raise PreferenceValidationError(
             f"pinned_actions cannot contain more than {MAX_PINNED_ACTIONS} actions"
         )
-    unknown = [action for action in unique if action not in known]
-    if unknown:
-        raise PreferenceValidationError(f"Unknown action: {unknown[0]}")
-
     with _WRITE_LOCK:
         data = _read_preferences()
         data["pinned_actions"] = unique

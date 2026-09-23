@@ -1,22 +1,22 @@
 :root {
-  --canvas: #e9edf0;
-  --surface: #fbfcfc;
-  --surface-soft: #f2f5f6;
+  --canvas: var(--brand-wash);
+  --surface: var(--brand-paper);
+  --surface-soft: var(--brand-surface-soft);
   --shelf: #18252c;
   --shelf-soft: #22323a;
-  --shelf-panel: #e8eef0;
-  --shelf-panel-border: #c8d4d9;
-  --shelf-card: rgba(255, 255, 255, .58);
+  --shelf-panel: var(--brand-paper);
+  --shelf-panel-border: var(--brand-line);
+  --shelf-card: var(--brand-surface-soft);
   --shelf-card-hover: #ffffff;
-  --shelf-card-active: var(--cobalt-soft);
-  --shelf-icon: var(--muted);
-  --ink: #142129;
-  --muted: #64737c;
-  --line: #d5dde1;
-  --line-strong: #b9c6cc;
-  --cobalt: #2452c7;
-  --cobalt-dark: #193b96;
-  --cobalt-soft: #e7edff;
+  --shelf-card-active: var(--brand-paper);
+  --shelf-icon: var(--brand-blue);
+  --ink: var(--brand-ink);
+  --muted: var(--brand-muted);
+  --line: var(--brand-line);
+  --line-strong: var(--brand-input-line);
+  --cobalt: var(--brand-blue);
+  --cobalt-dark: var(--brand-blue-dark);
+  --cobalt-soft: var(--brand-blue-soft);
   --amber: #a85e08;
   --amber-soft: #fff1d8;
   --green: #176b55;
@@ -25,9 +25,9 @@
   --red-soft: #fae9e7;
   --shadow: 0 16px 44px rgba(27, 43, 52, .09);
   --radius: 16px;
-  --font-display: "Bahnschrift SemiCondensed", "Aptos Display", "Microsoft JhengHei", sans-serif;
-  --font-body: "Segoe UI", "Microsoft JhengHei", sans-serif;
-  --font-mono: "Cascadia Code", "Consolas", monospace;
+  --font-display: var(--brand-font);
+  --font-body: var(--brand-font);
+  --font-mono: var(--brand-mono);
 }
 
 * { box-sizing: border-box; }
@@ -510,6 +510,8 @@ svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: 
 .watermark-advanced[open] summary { border-bottom: 1px solid var(--line); }
 .watermark-advanced-grid { display: grid; gap: 16px; padding: 15px; }
 .watermark-advanced-grid .field-label { font-size: 11px; }
+.watermark-advanced-grid .hint-row { display: grid; gap: 4px; }
+.watermark-advanced-grid .hint, .watermark-advanced-grid .default-hint { min-width: 0; overflow-wrap: anywhere; }
 .watermark-direct-input { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; outline: none; color: var(--ink); background: #fcfdfd; font: 700 12px var(--font-mono); }
 .watermark-direct-input:focus { border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(36, 82, 199, .13); }
 .watermark-number-control { display: contents; }

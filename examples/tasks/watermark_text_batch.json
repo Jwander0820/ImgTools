@@ -1,0 +1,14 @@
+{
+  "action": "watermark.text",
+  "params": {
+    "input_paths": [
+      "D:/input/first.png",
+      "D:/input/second.png"
+    ],
+    "output_dir": "D:/output/watermarked",
+    "text": "ImgTools",
+    "rotation": 30,
+    "opacity": 64,
+    "overwrite": false
+  }
+}

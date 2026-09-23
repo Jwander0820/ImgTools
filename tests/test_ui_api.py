@@ -8,6 +8,18 @@ from PIL import Image
 
 
 class UIAPITests(unittest.TestCase):
+    def test_watermark_ui_has_one_entry_with_single_and_batch_outputs(self):
+        from imgtools.ui.api import handle_get_tool, handle_get_tools
+
+        watermarks = [tool for tool in handle_get_tools()["tools"] if tool["category"] == "watermark"]
+        self.assertEqual([tool["action"] for tool in watermarks], ["watermark.text"])
+        params = {param["name"]: param for param in watermarks[0]["params"]}
+        self.assertEqual(params["input_paths"]["min_items"], 1)
+        self.assertEqual(params["output_path"]["type"], "path")
+        self.assertEqual(params["output_dir"]["type"], "folder")
+        # Existing automation can still inspect and execute the original action.
+        self.assertTrue(handle_get_tool("watermark.batch_text")["ok"])
+
     def test_api_tools_returns_registry(self):
         from imgtools.ui.api import handle_get_tools
 

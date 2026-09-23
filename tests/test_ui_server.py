@@ -6,6 +6,38 @@ from unittest.mock import Mock, call, patch
 
 
 class UIServerTests(unittest.TestCase):
+    def test_shared_brand_assets_are_served_with_svg_mime_and_path_boundary(self):
+        from xml.etree import ElementTree
+        from imgtools.ui.server import create_server
+
+        server = create_server("127.0.0.1", 0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            conn = HTTPConnection(*server.server_address, timeout=5)
+            for name in ("c-image-controls", "dialogue-stack", "vertical-stack", "watermark", "pdf-to-png"):
+                with self.subTest(icon=name):
+                    conn.request("GET", f"/static/shared/icons/{name}.svg")
+                    response = conn.getresponse()
+                    body = response.read()
+                    self.assertEqual(response.status, 200)
+                    self.assertEqual(response.getheader("Content-Type"), "image/svg+xml")
+                    self.assertEqual(ElementTree.fromstring(body).tag, "{http://www.w3.org/2000/svg}svg")
+            conn.request("GET", "/static/shared/theme.css")
+            response = conn.getresponse()
+            response.read()
+            self.assertEqual(response.status, 200)
+            self.assertIn("text/css", response.getheader("Content-Type"))
+            conn.request("GET", "/static/shared/../../../server.py")
+            response = conn.getresponse()
+            response.read()
+            self.assertEqual(response.status, 404)
+            conn.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
     def test_convenience_server_falls_back_when_default_port_is_unavailable(self):
         from imgtools.ui.server import serve
 

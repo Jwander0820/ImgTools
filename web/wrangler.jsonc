@@ -1,5 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
+  // GitHub repository, production branch, and build settings live in Pages settings.
+  // See ../docs/CLOUDFLARE_PAGES.md. This file does not connect GitHub by itself.
   "name": "imgtools-web",
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-09-23"

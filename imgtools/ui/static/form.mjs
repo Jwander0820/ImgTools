@@ -120,6 +120,7 @@ export function readFormValues(includeEmpty = false) {
   selected.params.forEach((param) => {
     const element = $(`param_${param.name}`);
     if (!element) return;
+    if (element.disabled && !includeEmpty) return;
     if (param.type === 'bool') output[param.name] = element.checked;
     else if (param.type === 'path_list') {
       const values = element.value.split(/\r?\n/).map(normalizeLocalPath).filter(Boolean);

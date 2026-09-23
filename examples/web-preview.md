@@ -16,4 +16,6 @@ npm.cmd start
 
 這個流程只在瀏覽器讀取選取檔案，不需要啟動 `ImgTools.cmd`。輸入檔不修改；成果以瀏覽器下載保存。
 
-若要本機模擬 Cloudflare Pages，使用 `npm.cmd run cf:dev` 並開啟 `http://127.0.0.1:5860`；這不會發布。真正上傳前先依 [部署文件](../docs/CLOUDFLARE_PAGES.md) 完成登入與專案建立，再執行 `npm.cmd run cf:deploy`。
+若要比較本機工作台，依 README 啟動 `ImgTools.cmd` 並開啟 `http://127.0.0.1:5858`。兩版共用主圖示、對應功能圖示及配色；本機頁首顯示 `LOCAL`，靜態版顯示 `WEB`。建置靜態版時需保留專案中的 `imgtools/ui/static/shared/`，發布內容仍只有 `web/dist/`。
+
+若要本機模擬 Cloudflare Pages，使用 `npm.cmd run cf:dev` 並開啟 `http://127.0.0.1:5860`；這不會發布。自動部署先依 [部署文件](../docs/CLOUDFLARE_PAGES.md) 在 Pages 連接 GitHub；之後推送 `master` 即觸發正式建置。可先在本機執行 `npm.cmd run cf:build`，確認模型測試與建置通過。

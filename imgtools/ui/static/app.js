@@ -1,4 +1,4 @@
-import {$, CATEGORY_LABELS, CATEGORY_ICONS, tools, selected, activeCategory, searchTerm, outputNaming, preferences, formState, setTools, setSelected, setActiveCategory, setSearchTerm, setOutputNamingValue, setPreferences} from './state.mjs';
+import {$, CATEGORY_LABELS, iconForTool, tools, selected, activeCategory, searchTerm, outputNaming, preferences, formState, setTools, setSelected, setActiveCategory, setSearchTerm, setOutputNamingValue, setPreferences} from './state.mjs';
 import {startJobs} from './jobs.mjs';
 import {renderForm, saveFormState} from './form.mjs';
 import {setStatus, escapeHtml} from './dom.mjs';
@@ -151,10 +151,6 @@ export function renderOutputNaming() {
   });
 }
 
-export function iconFor(category) {
-  return CATEGORY_ICONS[category] || CATEGORY_ICONS.merge;
-}
-
 export function renderQuickActions() {
   const quickActions = preferences.quick_actions
     .map((preference) => ({ preference, tool: tools.find((tool) => tool.action === preference.action) }))
@@ -167,7 +163,7 @@ export function renderQuickActions() {
     button.setAttribute('aria-pressed', String(isActive));
     button.innerHTML = `
       <span class="frame-index">${String(index + 1).padStart(2, '0')}</span>
-      <span class="quick-icon">${iconFor(tool.category)}</span>
+      <span class="quick-icon">${iconForTool(tool)}</span>
       <span class="quick-copy"><strong>${escapeHtml(tool.title)}</strong><small><span class="quick-source ${preference.source}">${escapeHtml(preferenceLabel(preference.source))}</span>${preference.successful_runs ? `${preference.successful_runs} 次成功執行` : '快速開啟'}</small></span>
       <svg class="launch-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>`;
     button.addEventListener('click', () => selectTool(tool, true));
@@ -203,7 +199,7 @@ export function renderQuickEditor() {
     button.setAttribute('aria-pressed', String(isPinned));
     button.disabled = !isPinned && pinned.size >= maxPinned;
     button.innerHTML = `
-      <span class="pin-choice-icon">${iconFor(tool.category)}</span>
+      <span class="pin-choice-icon">${iconForTool(tool)}</span>
       <span><strong>${escapeHtml(tool.title)}</strong><small>${escapeHtml(CATEGORY_LABELS[tool.category] || tool.category)} · ${usage} 次成功執行</small></span>
       <svg class="pin-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.4 5.1 5.6.7-4.1 3.9 1.1 5.5-5-2.7-5 2.7 1.1-5.5L4 8.8l5.6-.7z"/></svg>`;
     button.addEventListener('click', () => togglePinnedAction(tool.action, button));
@@ -271,7 +267,7 @@ export function renderTools() {
     button.className = `tool${isActive ? ' active' : ''}`;
     button.setAttribute('aria-current', isActive ? 'true' : 'false');
     button.innerHTML = `
-      <span class="tool-icon">${iconFor(tool.category)}</span>
+      <span class="tool-icon">${iconForTool(tool)}</span>
       <span class="tool-copy"><strong>${escapeHtml(tool.title)}</strong><small>${escapeHtml(CATEGORY_LABELS[tool.category] || tool.category)}</small></span>
       <svg class="tool-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>`;
     button.addEventListener('click', () => selectTool(tool, window.innerWidth < 761));

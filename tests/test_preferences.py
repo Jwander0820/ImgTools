@@ -15,6 +15,47 @@ TOOLS = [
 
 
 class PreferenceTests(unittest.TestCase):
+    def test_watermark_pins_and_usage_share_one_ui_entry_without_rewriting_history(self):
+        from imgtools.service.preferences import get_preferences_view, record_successful_run
+
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": tmp}):
+            path = Path(tmp) / "preferences.json"
+            original = json.dumps({
+                "version": 3,
+                "pinned_actions": ["watermark.batch_text", "pdf.render_page", "watermark.text"],
+                "usage": {
+                    "watermark.batch_text": {"successful_runs": 3, "last_used_at": "2026-09-23T10:00:00+00:00"},
+                    "watermark.text": {"successful_runs": 2, "last_used_at": "2026-09-23T11:00:00+00:00"},
+                },
+                "settings": {"pdf_default_dpi": 300, "output_naming": "source"},
+            })
+            path.write_text(original, encoding="utf-8")
+            view = get_preferences_view()
+            self.assertEqual(view["pinned_actions"], ["watermark.text", "pdf.render_page"])
+            self.assertEqual(view["quick_actions"][0], {
+                "action": "watermark.text", "source": "pinned", "successful_runs": 5,
+            })
+            self.assertEqual(len(view["quick_actions"]), 8)
+            self.assertNotIn("watermark.batch_text", [item["action"] for item in view["quick_actions"]])
+            self.assertEqual(view["usage"]["watermark.text"]["last_used_at"], "2026-09-23T11:00:00+00:00")
+            self.assertEqual(view["pdf_default_dpi"], 300)
+            self.assertEqual(view["output_naming"], "source")
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+            record_successful_run("watermark.text")
+            self.assertEqual(get_preferences_view()["usage"]["watermark.text"]["successful_runs"], 6)
+
+    def test_saving_old_watermark_pins_normalizes_before_the_limit(self):
+        from imgtools.service.preferences import update_pinned_actions
+
+        other = ["metadata.read_tif_tags", "rename.files_replace", "rename.folders_replace",
+                 "pdf.render_page", "pdf.render_all_pages", "merge.stack_vertical", "merge.dialogue_stack"]
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"IMGTOOLS_STATE_DIR": tmp}):
+            view = update_pinned_actions(["watermark.batch_text", *other, "watermark.text"])
+            expected = ["watermark.text", *other]
+            self.assertEqual(view["pinned_actions"], expected)
+            saved = json.loads((Path(tmp) / "preferences.json").read_text(encoding="utf-8"))
+            self.assertEqual(saved["pinned_actions"], expected)
+
     def test_repository_tracks_only_the_preferences_example(self):
         root = Path(__file__).resolve().parents[1]
 

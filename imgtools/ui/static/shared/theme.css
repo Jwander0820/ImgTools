@@ -1,0 +1,23 @@
+/* One visual palette for the local workbench and the static website. */
+:root {
+  color-scheme: light;
+  --brand-ink: #233c50;
+  --brand-muted: #53697a;
+  --brand-blue: #225c99;
+  --brand-blue-dark: #174b82;
+  --brand-blue-soft: #e3edf7;
+  --brand-wash: #eef3f8;
+  --brand-paper: #fff;
+  --brand-surface-soft: #f2f6fa;
+  --brand-line: #cedae5;
+  --brand-input-line: #9fb2c3;
+  --brand-preview: #e6edf4;
+  --brand-focus: #b45826;
+  --brand-radius: 12px;
+  --brand-font: "Segoe UI", "Microsoft JhengHei", sans-serif;
+  --brand-mono: Consolas, monospace;
+}
+.brand-icon { display: block; flex-shrink: 0; width: 32px; height: 32px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

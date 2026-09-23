@@ -15,6 +15,22 @@ export const CATEGORY_ICONS = {
   watermark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 12 4l8 14M7 13h10M6 21h12"/></svg>',
 };
 
+const ACTION_ICON_FILES = Object.freeze({
+  'merge.dialogue_stack': 'dialogue-stack.svg',
+  'merge.stack_vertical': 'vertical-stack.svg',
+  'watermark.text': 'watermark.svg',
+  'watermark.batch_text': 'watermark.svg',
+  'pdf.render_page': 'pdf-to-png.svg',
+  'pdf.render_all_pages': 'pdf-to-png.svg',
+});
+
+export function iconForTool(tool) {
+  const file = ACTION_ICON_FILES[tool.action];
+  return file
+    ? `<img src="${new URL(`./shared/icons/${file}`, import.meta.url).href}" width="24" height="24" alt="">`
+    : CATEGORY_ICONS[tool.category] || CATEGORY_ICONS.merge;
+}
+
 export let tools = [];
 export let selected = null;
 export let activeCategory = 'all';

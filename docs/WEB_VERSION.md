@@ -24,7 +24,7 @@
 
 ## UI 方向與後續素材
 
-保留目前靜態版的藍白整體風格，下一階段才對齊本機 UI；本次不修改本機版。頁首及 favicon 共用 C「影像工作台」SVG，四功能使用同套台詞疊圖、直向疊圖、浮水印與 PDF 轉 PNG 圖示。素材來自使用者提供的 `imgtools-icon-concepts/svg/`，存放於 `web/icons/`；保留原始幾何、線寬與 currentColor，只在 SVG 根元素指定網站藍色 `#225c99`，使外部圖片與 favicon 顏色一致。主圖示以 32px、功能圖示以 24px 顯示，旁邊保留工具名稱；圖片使用空 alt，避免輔助閱讀重複朗讀。手機優先保留可捲動區域、48px 觸控控制點與滑桿，數字欄位採 16px 字級，提供前往預覽／返回設定的跳轉入口。
+兩版採用相同藍白配色、工具卡片選取樣式及淺藍預覽底色，本機保留完整工具庫與任務工作台，以 `LOCAL`／`WEB` 區分版本。頁首及 favicon 共用 C「影像工作台」SVG，四功能使用同套台詞疊圖、直向疊圖、浮水印與 PDF 轉 PNG 圖示。素材來自使用者提供的 `imgtools-icon-concepts/svg/`，唯一來源為 `imgtools/ui/static/shared/icons/`；保留原始幾何、線寬與 currentColor，只在 SVG 根元素指定網站藍色 `#225c99`，使外部圖片與 favicon 顏色一致。配色與字型由同目錄的 `theme.css` 共用，靜態建置複製整個 shared 目錄至 `dist/shared/`。主圖示以 32px、功能圖示以 24px 顯示，旁邊保留工具名稱；圖片使用空 alt，避免輔助閱讀重複朗讀。靜態版手機保留可捲動區域、48px 觸控控制點與滑桿，數字欄位採 16px 字級，提供前往預覽／返回設定的跳轉入口。本機窄視窗工具庫可收合，常用工具使用兩欄卡片。
 
 ## 預覽與部署
 
@@ -37,9 +37,9 @@ npm.cmd run preview
 
 網址為 `http://127.0.0.1:5859`，可用 `PORT` 環境變數調整預覽埠。Ctrl+C 停止預覽。Node.js 只用於安裝、複製產物和本機預覽，不是上線後的執行依賴。PDF.js 版本固定於 package-lock.json。
 
-亦可用 `npm.cmd start` 一次完成建置與預覽。Cloudflare Pages Direct Upload 設定已放在 `web/wrangler.jsonc`；不需要 GitHub。完整登入、建置、本機模擬與發布指令見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。Wrangler 需要平台專用 optional dependencies，因此安裝時不要加 `--omit=optional`。
+亦可用 `npm.cmd start` 一次完成建置與預覽。部署方向改採 Cloudflare Pages Git integration，監看 GitHub `master`；`web/wrangler.jsonc` 指定產物，`web/.node-version` 指定建置版本。首次連結、Pages 欄位與發布流程見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。Wrangler 需要平台專用 optional dependencies，因此安裝時不要加 `--omit=optional`。
 
-部署時上傳 `web/dist/` 全部內容至 HTTPS 靜態主機；建置命令為 `npm ci --ignore-scripts && npm run build`（工作目錄 `web`），輸出目錄 `dist`。使用相對資源路徑，可放在子目錄。主機須正確提供 `.mjs` 的 JavaScript MIME 與 `.wasm` 的 `application/wasm`。不要把專案根目錄、data、node_modules 或本機 API 公開。
+部署時上傳 `web/dist/` 全部內容至 HTTPS 靜態主機；Cloudflare 建置命令為 `npm ci --ignore-scripts && npm run cf:build`（工作目錄 `web`，設定 `SKIP_DEPENDENCY_INSTALL=1`），輸出目錄 `dist`。使用相對資源路徑，可放在子目錄。主機須正確提供 `.mjs` 的 JavaScript MIME 與 `.wasm` 的 `application/wasm`。不要把專案根目錄、data、node_modules 或本機 API 公開。
 
 套件與 CMap、字型、WASM 同站提供；PDF 工具才延遲載入 PDF.js。未加入分析追蹤、外部字型或 Service Worker。頁面未操作時不輪詢 API。PDF.js Apache-2.0 授權及資源附帶授權隨產物保留。執行 `npm test` 驗證瀏覽器模型；`node --test tests/frontend.test.mjs` 仍是原本本機前端測試。
 
@@ -54,6 +54,8 @@ npm.cmd run preview
 本次工作環境沒有專案 `.venv`，原 CMD 的備援 Python 路徑也不存在；回歸使用 bundled Python 與 `data/web-qa-deps` 隔離依賴，未改系統 Python 或原啟動器。日後設定常駐前須先依 README 建立正式 `.venv`。
 
 ## 驗證紀錄（2026-09-23）
+
+- 共用本機視覺：五份 SVG 移至 `imgtools/ui/static/shared/icons/`，兩版載入相同圖示及配色。靜態建置、13 項模型測試與跨版本素材內容比對通過；本機工作台的桌面／窄視窗操作驗證見 [UI_ITERATION.md](UI_ITERATION.md)。部署監看路徑已納入 shared 目錄，未公開部署。
 
 - 指定 SVG 套用：Chrome 1280px／375px 確認五個圖示載入、四工具切換、鍵盤導覽及無水平溢出；favicon 指向 C 主圖示，五份 SVG 回應 200 與 `image/svg+xml`，console 無錯誤。建置包含 icons，22 項 JS、158 項 Python、JS syntax、compileall、CLI list、diff check 通過。未在實體手機或 Safari 驗證 favicon，未公開部署。
 

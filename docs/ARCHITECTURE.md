@@ -8,13 +8,15 @@
 
 靜態版資料流：瀏覽器 File → `model.mjs` 驗證／版面計算 → `render.mjs` Canvas（或 `pdf.mjs` PDF.js worker）→ PNG Blob → 使用者下載。`app.mjs` 管理選檔、排序、失效預覽、忙碌狀態及 Blob URL 釋放。`build.mjs` 僅複製自有模組與鎖定版本 PDF.js 資源；`preview.mjs` 僅供 loopback 靜態預覽，沒有處理 API。
 
-`web/icons/` 保存使用者指定的五份 SVG，建置時複製至 `dist/icons/`；頁首與 favicon 共用 `c-image-controls.svg`。本機預覽提供 `image/svg+xml` MIME。圖示以外部圖片載入，SVG 根元素的 `color` 必須與網站主色同步；來源與顯示規則見 [WEB_VERSION.md](WEB_VERSION.md)。
+`imgtools/ui/static/shared/` 是兩版共用的視覺來源：`icons/` 保存使用者指定的五份 SVG，`theme.css` 定義品牌配色、字型及共用圖示尺寸。Python 直接提供 `/static/shared/`，靜態版建置則複製至 `web/dist/shared/`；建置需保留完整 repository，部署只使用 `dist`。兩版頁首與 favicon 共用 `c-image-controls.svg`，SVG 回應為 `image/svg+xml`，仍受既有靜態目錄邊界限制。外部 SVG 根元素的 `color` 必須與共用主色同步；來源與顯示規則見 [WEB_VERSION.md](WEB_VERSION.md)。
+
+本機 `state.mjs` 的 `iconForTool()` 依 action 選用共用圖示，供工具庫、常用工具及自訂常用清單使用；台詞、直向疊圖、兩種浮水印、兩種 PDF 轉圖 action 共用四款圖示，其餘 action 沿用類別圖示。兩版 CSS 以原有變數名稱引用 `theme.css`，本機 `layout.css` 負責完整工作台的桌面與窄視窗配置，保留 registry 表單、編輯器、任務佇列與結果互動。
 
 `web/fields.mjs` 提供工具欄位與預覽滑桿；`watermark-editor.mjs` 以 Pointer Events／pointer capture 管理移動、縮放、旋轉、手勢結束及鍵盤操作。浮水印幾何計算位於 `model.mjs`，`render.mjs` 與控制框使用同一份輸出座標，控制點不畫進 PNG。自訂位置為圖片比例，字級為來源像素；批次各圖分別換算位置。旋轉取指標相對文字中心的角度差，正值為順時針，並正規化至 -180～179 度；數字欄位與滑桿仍接受 180 度。三個圖示按鈕保留 accessible name 與鍵盤操作，手機控制點盡量分離。只有操作控制點才使用 `touch-action:none`，其餘畫面保留捲動。
 
 選檔及 drag/drop 共用 `loadFiles()`：驗證合併後的張數／大小、逐張解碼到暫存清單，整批成功才加入；失敗僅釋放新檔案，保留既有輸入及成果。PDF 選檔成功後替換前一份。載入／輸出期間拒絕新檔案與編輯；非同步預覽以版本核對，調整參數可保留畫面避免拖曳閃爍，但立即使舊成果失效。
 
-Cloudflare 以 `web/wrangler.jsonc` 指定 Pages 專案和 `dist` 產物，走 Direct Upload，不依賴 Git integration。Wrangler 只作為開發／部署依賴，沒有新增 Functions 或上傳使用者檔案的 API。`npm start` 先建置再開 5859 預覽，`cf:dev` 在 5860 本機模擬，`cf:deploy`／`cf:deploy:preview` 才會實際發布；流程見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。
+Cloudflare 以 Pages Git integration 監看 GitHub `master`，推送後由 Cloudflare 執行 `npm ci --ignore-scripts && npm run cf:build`。建置工作目錄為 `web`，`cf:build` 先執行靜態版模型測試再產生 `dist`；`web/.node-version` 固定建置用 Node。GitHub 授權、分支、建置命令與 watch paths 設在 Pages，`web/wrangler.jsonc` 僅指定專案名、`dist` 與相容日期，不會自行連接 GitHub。Wrangler 只作為開發／手動部署依賴，沒有新增 Functions 或檔案上傳 API，也不需額外 GitHub Actions 部署。`npm start` 在 5859 預覽，`cf:dev` 在 5860 模擬；保留的 `cf:deploy`／`cf:deploy:preview` 會實際發布到 `master`／`preview`。完整流程見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。
 
 ```text
 使用者 / 自動化
@@ -99,7 +101,7 @@ result = run_tool(
 
 | Method | Route | 用途 |
 |---|---|---|
-| `GET` | `/api/tools` | 取得全部工具 metadata |
+| `GET` | `/api/tools` | 取得 UI 可選工具 metadata（排除已整合入口） |
 | `GET` | `/api/tools/<action>` | 取得單一工具 metadata |
 | `GET` | `/api/preferences` | 取得 UI 偏好與常用工具 |
 | `POST` | `/api/run` | `{action, params}` 執行工具 |
@@ -112,6 +114,12 @@ result = run_tool(
 | `POST` | `/api/preferences` | 更新 `pinned_actions` 或 `pdf_default_dpi` |
 
 這是沒有驗證機制的本機 interface，預設只應綁定 loopback，不應直接公開到網路。
+
+`ToolSpec.ui_replacement` 表示某個 action 在 UI 改由另一個入口提供。目前 `watermark.batch_text` 指向 `watermark.text`：工具清單提供 18 個入口，但 registry、CLI 與單一 action metadata 保留原有 19 個 actions。此欄位只整合導覽與偏好，不重新命名任務，也不改寫送給 runner 的 action。
+
+`get_preferences_view()` 依 registry 對應合併舊釘選、成功次數與最近使用時間，維持釘選順序並補滿常用清單；讀取不重寫磁碟紀錄。保存釘選時先轉為 UI action、去重後再檢查數量上限。歷史成功次數仍依原 action 保存，再於顯示時計算，避免每次讀取重複累加。
+
+`watermark.text` 同時宣告 `output_path` 與 `output_dir`：編輯器依圖片張數顯示對應欄位，停用另一欄；表單保存包含停用欄的值，實際送出排除停用欄。單張沿用輸出檔案，多張由既有 `add_text_batch()` 集中輸出，仍走 `handle_run()` 與 runner 的驗證、安全預設及 manifest。
 
 UI 的非同步任務仍透過 `handle_run()` → `run_tool()` 執行，與 CLI/Python 共用驗證和 manifest。單個服務程序的 runner 以鎖序列化；UI 最多容納 16 個未完成任務。`ExecutionContext` 透過 context variable 傳入可選進度與取消事件，core 不需知道 HTTP 或 UI。取消及失敗會回傳已完成輸出的路徑；不自動刪除使用者檔案。影片輸出先暫存再發布。改名的執行階段不提供取消。
 

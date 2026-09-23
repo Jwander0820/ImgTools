@@ -25,6 +25,7 @@ from imgtools.ui.api import (
 STATIC_DIR = Path(__file__).with_name("static")
 INDEX_HTML = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
 STATIC_CONTENT_TYPES = {
+    ".svg": "image/svg+xml",
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
     ".mjs": "text/javascript; charset=utf-8",

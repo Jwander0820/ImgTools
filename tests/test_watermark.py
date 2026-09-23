@@ -234,6 +234,29 @@ class WatermarkTests(unittest.TestCase):
             self.assertEqual(len(result["outputs"]["files"]), 2)
             self.assertTrue(all(Path(path).is_file() for path in result["outputs"]["files"]))
 
+    def test_text_action_batch_uses_the_selected_output_directory(self):
+        from imgtools.service.runner import run_tool
+
+        with tempfile.TemporaryDirectory() as tmp:
+            first = Path(tmp) / "first.png"
+            second = Path(tmp) / "second.png"
+            output_dir = Path(tmp) / "chosen-output"
+            Image.new("RGB", (120, 80), "white").save(first)
+            Image.new("RGB", (100, 70), "white").save(second)
+            original = [first.read_bytes(), second.read_bytes()]
+            for action in ("watermark.text", "watermark.batch_text"):
+                with self.subTest(action=action):
+                    result = run_tool(action, {
+                        "input_paths": [str(first), str(second)],
+                        "output_dir": str(output_dir / action),
+                        "text": "BATCH", "font_size": 18, "opacity": 255,
+                    }, manifest=False)
+                    self.assertTrue(result["ok"], result)
+                    paths = [Path(path) for path in result["outputs"]["files"]]
+                    self.assertEqual(len(paths), 2)
+                    self.assertTrue(all(path.is_file() and path.parent == output_dir / action for path in paths))
+            self.assertEqual([first.read_bytes(), second.read_bytes()], original)
+
 
 if __name__ == "__main__":
     unittest.main()

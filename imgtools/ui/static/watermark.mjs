@@ -1,6 +1,6 @@
 let watermarkPreviewRender = 0;
 import {$, selected, previewImages, previewErrors, previewPendingPaths} from './state.mjs';
-import {valueFor} from './form.mjs';
+import {valueFor, outputNamingNote} from './form.mjs';
 import {renderField, pathItems, normalizeLocalPath} from './fields.mjs';
 import {isWatermarkAction, loadDialoguePreviewImage} from './preview.mjs';
 import {escapeHtml} from './dom.mjs';
@@ -15,7 +15,6 @@ export function watermarkInputParam() {
 }
 
 export function renderWatermarkEditor() {
-  const isBatch = selected?.action === 'watermark.batch_text';
   const inputParam = watermarkInputParam();
   const text = valueFor(watermarkParam('text'));
   const fontSize = valueFor(watermarkParam('font_size'));
@@ -104,8 +103,9 @@ export function renderWatermarkEditor() {
     renderField(selected?.action === 'watermark.text' ? { ...inputParam, required: true } : inputParam),
   );
   const advanced = panel.querySelector('.watermark-advanced-grid');
-  ['font_path', 'margin', isBatch ? 'output_dir' : 'output_path', 'overwrite']
-    .map(watermarkParam)
+  ['font_path', 'margin', 'output_path', 'output_dir', 'overwrite']
+    .map(name => selected.params.find(param => param.name === name))
+    .filter(Boolean)
     .forEach((param) => advanced.appendChild(renderField(param)));
   return panel;
 }
@@ -132,6 +132,22 @@ export function initWatermarkEditor() {
   const repeatSpacingField = $('watermark-repeat-spacing-field');
   const coordinateFields = $('watermark-coordinate-fields');
   if (!canvas || !rotationRange || !rotationInput || !opacityRange || !opacityInput || !positionSelect) return;
+
+  const updateOutputs = () => {
+    const batch = selected.action === 'watermark.batch_text' || pathItems('param_input_paths').length > 1;
+    const note = document.querySelector('#actionbar .action-note');
+    if (note) note.textContent = batch ? '多張圖片集中輸出到資料夾；重名會自動加編號' : outputNamingNote();
+    for (const name of ['output_path', 'output_dir']) {
+      const input = $(`param_${name}`);
+      if (!input) continue;
+      const active = batch === (name === 'output_dir');
+      input.disabled = !active;
+      input.closest('.field').hidden = !active;
+    }
+  };
+  inputPath?.addEventListener('input', updateOutputs);
+  inputPath?.addEventListener('change', updateOutputs);
+  updateOutputs();
 
   const updateRotation = (value) => {
     const next = Math.min(180, Math.max(-180, Number(value) || 0));

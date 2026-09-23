@@ -129,6 +129,7 @@ class ToolSpec:
     handler: ToolHandler
     danger_level: str = "low"
     featured: bool = False
+    ui_replacement: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -139,6 +140,7 @@ class ToolSpec:
             "params": [param.to_dict() for param in self.params],
             "danger_level": self.danger_level,
             "featured": self.featured,
+            "ui_replacement": self.ui_replacement,
         }
 
 
@@ -559,10 +561,15 @@ def _specs() -> list[ToolSpec]:
             action="watermark.text",
             title="加入文字浮水印",
             category="watermark",
-            description="在圖片指定位置加入可旋轉的半透明文字浮水印。",
+            description="在一張或多張圖片加入文字浮水印，可拖曳定位並調整角度、大小與透明度。",
             params=(
                 ToolParam("input_path", "path", False, description="單張圖片相容輸入；多張時請使用圖片清單。"),
                 ToolParam("input_paths", "path_list", False, description="可一次選擇一張或多張圖片。", min_items=1),
+                ToolParam(
+                    "output_dir", "folder", False,
+                    description="選取多張圖片時，將所有結果集中儲存於此資料夾。",
+                    default_hint="第一張圖片旁的 watermarked 資料夾",
+                ),
                 ToolParam(
                     "output_path",
                     "path",
@@ -646,6 +653,7 @@ def _specs() -> list[ToolSpec]:
             ),
             handler=watermark.add_text_batch,
             featured=True,
+            ui_replacement="watermark.text",
         ),
     ]
 

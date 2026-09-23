@@ -23,7 +23,7 @@ PREVIEW_PATH_LIMIT = 24
 
 
 def handle_get_tools() -> dict[str, Any]:
-    return {"ok": True, "tools": list_tools()}
+    return {"ok": True, "tools": [tool for tool in list_tools() if not tool.get("ui_replacement")]}
 
 
 def handle_get_tool(action: str) -> dict[str, Any]:
