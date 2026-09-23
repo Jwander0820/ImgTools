@@ -5,6 +5,7 @@
 
 .tool-icon{display:block;flex-shrink:0;width:24px;height:24px}
 .file-pick.drag-over{outline:3px solid var(--blue);background:#dcebf8}
+.source-link{padding-top:12px}.source-link a{color:var(--muted);text-underline-offset:3px}.source-link a:hover{color:var(--blue)}
 #preview-wrap{position:relative;max-width:100%;min-width:0;overflow:hidden;flex-shrink:1}
 #preview-wrap canvas{display:block}
 #wm-outline{position:absolute;border:1px dashed #fff;outline:1px dashed var(--blue);pointer-events:none}

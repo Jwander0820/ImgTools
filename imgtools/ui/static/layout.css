@@ -2,6 +2,9 @@
 :root { --radius: var(--brand-radius); --shadow: none; }
 body { background: var(--canvas); font-size: 14px; line-height: 1.5; }
 .app-shell { padding-bottom: 104px; }
+.source-footer { max-width: 1920px; margin: 0 auto; padding: 4px 24px 0; font-size: 12px; text-align: right; }
+.source-footer a { color: var(--muted); text-underline-offset: 3px; }
+.source-footer a:hover { color: var(--cobalt); }
 .topbar { position: sticky; top: 0; z-index: 20; height: 72px; padding-inline: 24px; background: var(--surface); }
 .brand strong { font-size: 24px; }
 .brand small, .server-state small, .setting-label { font-size: 12px; }
