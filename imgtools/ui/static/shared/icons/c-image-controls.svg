@@ -1,5 +1,7 @@
-<svg color="#225c99" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="影像工作台">
+<svg color="#ffffff" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="32" height="32" role="img" aria-label="影像工作台">
   <title>影像工作台</title>
+  <rect width="40" height="40" rx="8" fill="#225c99"/>
+  <g transform="translate(4 4)">
 <g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
   <path d="M14 6H7a3 3 0 0 0-3 3v16a3 3 0 0 0 3 3h18a3 3 0 0 0 3-3v-7"/>
   <path d="m4 22 6-6 12 12"/>
@@ -8,4 +10,5 @@
   <circle cx="28" cy="11" r="2"/>
 </g>
 <circle cx="10" cy="11" r="1.5" fill="currentColor"/>
+  </g>
 </svg>
