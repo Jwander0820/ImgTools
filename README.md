@@ -1,6 +1,24 @@
 # ImgTools
 
-ImgTools 是一套完全在本機執行的影像工作台。所有功能共用同一份 action registry，可由瀏覽器 UI、CLI 或 Python 呼叫；輸入檔不會上傳到網路。
+ImgTools 是一套完全在本機執行的影像工作台。本機版所有功能共用同一份 action registry，可由瀏覽器 UI、CLI 或 Python 呼叫；輸入檔不會上傳到網路。
+
+另有獨立的 **靜態網頁版**（`web/`），提供台詞疊圖、快速直向疊圖、文字浮水印與 PDF 單頁轉 PNG。全部在使用者瀏覽器處理，不需要 Python API、容器或檔案上傳；完整本機版仍然保留。
+
+靜態版可選檔或拖曳圖片加入清單，台詞疊圖提供預覽旁的字幕起點／間距滑桿；浮水印可用圖示控制點拖曳定位、縮放與旋轉，也能用滑桿、數值或鍵盤調整。手機使用相同的觸控控制點，並提供設定與預覽間的跳轉入口。
+
+## 靜態網頁版預覽
+
+建置需要 Node.js 22.13+ 或 24+，正式主機只需提供靜態檔案：
+
+```powershell
+cd web
+npm.cmd ci --ignore-scripts
+npm.cmd start
+```
+
+開啟 <http://127.0.0.1:5859>。部署目錄是 `web/dist/`，不要公開整個專案；PDF.js 與字型／解碼資源已包含在產物中，不依賴 CDN。只用 `file://` 雙擊 HTML 不能取代 HTTP 預覽。完整範圍、限制、驗證紀錄與本機背景啟動評估見 [docs/WEB_VERSION.md](docs/WEB_VERSION.md)。
+
+Cloudflare 使用 **Pages Direct Upload**，不需連 GitHub：`npm.cmd run cf:dev` 在 5860 埠本機模擬；`npm.cmd run cf:deploy` 會建置並發布。帳號登入、首次建立專案與 `web/wrangler.jsonc` 設定說明見 [Cloudflare 直接部署](docs/CLOUDFLARE_PAGES.md)。
 
 ## 功能
 

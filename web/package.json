@@ -1,0 +1,20 @@
+{
+  "name": "imgtools-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npm run build && npm run preview",
+    "build": "node build.mjs",
+    "preview": "node preview.mjs",
+    "test": "node --test ../tests/web-model.test.mjs",
+    "cf:dev": "npm run build && wrangler pages dev --ip 127.0.0.1 --port 5860",
+    "cf:deploy": "npm run build && wrangler pages deploy --branch main",
+    "cf:deploy:preview": "npm run build && wrangler pages deploy --branch preview"
+  },
+  "dependencies": {
+    "pdfjs-dist": "6.3.289"
+  },
+  "devDependencies": {
+    "wrangler": "4.136.3"
+  }
+}

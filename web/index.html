@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="在瀏覽器完成台詞疊圖、直向疊圖、浮水印及 PDF 單頁轉 PNG。檔案不會上傳。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; font-src 'self' blob: data:; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>ImgTools 影像工具</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./app.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#workspace">跳至工作區</a>
+  <header><a class="brand" href="./"><span class="mark" aria-hidden="true">▧</span> ImgTools <span class="edition">WEB</span></a></header>
+  <main id="workspace">
+    <h1 class="sr-only">ImgTools 影像工具</h1>
+    <nav aria-label="影像工具" id="tools">
+      <button type="button" data-tool="dialogue" aria-pressed="true"><span aria-hidden="true">▤</span>台詞疊圖</button>
+      <button type="button" data-tool="stack" aria-pressed="false"><span aria-hidden="true">▥</span>直向疊圖</button>
+      <button type="button" data-tool="watermark" aria-pressed="false"><span aria-hidden="true">Aa</span>文字浮水印</button>
+      <button type="button" data-tool="pdf" aria-pressed="false"><span aria-hidden="true">▱</span>PDF 轉 PNG</button>
+    </nav>
+    <div class="desk">
+      <section class="controls" aria-labelledby="tool-title">
+        <div class="section-head"><h2 id="tool-title">台詞疊圖</h2><button id="clear" type="button" class="quiet">清除</button></div>
+        <p id="description" class="muted"></p>
+        <form id="form">
+          <fieldset id="inputs">
+            <legend class="sr-only">來源檔案與工具設定</legend>
+            <div class="file-pick" id="drop-zone"><label for="files"><strong id="pick-label">加入圖片</strong><span id="file-help">選擇或拖曳 PNG、JPEG、WebP · 每檔最多 50 MB</span></label><input id="files" type="file" accept="image/png,image/jpeg,image/webp" multiple aria-describedby="file-help"></div>
+            <ol id="file-list" aria-label="圖片順序"></ol>
+            <a class="mobile-jump" href="#preview-panel">前往預覽與滑桿</a>
+            <div id="settings"></div>
+            <button class="primary" id="export" type="submit">產生 PNG</button>
+          </fieldset>
+        </form>
+        <p id="status" role="status" aria-live="polite">選擇圖片，開始整理。</p>
+      </section>
+      <section class="preview-panel" id="preview-panel" aria-labelledby="preview-title">
+        <div class="preview-heading"><h2 id="preview-title">成品預覽</h2><span id="dimensions">尚未選檔</span></div>
+        <fieldset id="editor-controls" hidden><legend class="sr-only">預覽調整</legend><div id="editor-fields"></div></fieldset>
+        <div id="stage" class="stage">
+          <div id="empty"><div class="paper-stack" aria-hidden="true"><i></i><i></i><i></i></div><p>選擇或拖曳檔案以開始預覽。</p></div>
+          <div id="preview-wrap" hidden>
+            <canvas id="preview" hidden aria-label="目前設定的合成預覽"></canvas><div id="wm-outline" hidden aria-hidden="true"></div>
+            <button id="wm-move" class="image-handle" hidden type="button" aria-label="移動浮水印" title="移動" aria-describedby="gesture-help"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg></button>
+            <button id="wm-resize" class="image-handle" hidden type="button" aria-label="縮放浮水印" title="縮放" aria-describedby="gesture-help"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10V4h6M4 4l16 16M14 20h6v-6"/></svg></button>
+            <button id="wm-rotate" class="image-handle" hidden type="button" aria-label="旋轉浮水印" title="旋轉" aria-describedby="gesture-help"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 10a8 8 0 1 0-2 8M20 4v6h-6"/></svg></button>
+          </div>
+        </div>
+        <a class="mobile-jump" href="#form">返回設定與產生 PNG</a>
+        <p class="preview-note" id="preview-note">預覽會縮小顯示，輸出保留原始像素尺寸。</p>
+        <div id="results" aria-label="下載成果"></div>
+      </section>
+    </div>
+    <footer><p>在你的瀏覽器裡完成處理，檔案不會上傳。重新整理頁面會清除這次工作。</p><p>建議使用新版 Chrome、Edge、Firefox 或 Safari。大圖請優先使用電腦。</p><details><summary>格式與尺寸限制</summary><p>圖片支援 PNG、JPEG、WebP，輸出為 PNG，不保留來源 metadata。單檔最多 50 MB、合計最多 100 MB；來源合計最多 4,800 萬像素，單張或成品最多 2,400 萬像素、單邊 16,384 px。裝置能力可能低於上限。PDF 的 DPI 控制輸出像素，不保證 PNG 內的列印解析度標籤。浮水印字型依裝置可用字型顯示。</p></details></footer>
+  </main>
+  <noscript>請開啟 JavaScript，才能在瀏覽器內處理圖片。</noscript>
+</body>
+</html>

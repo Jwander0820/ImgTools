@@ -4,6 +4,16 @@
 
 ## 1. 架構總覽
 
+本文件原有 runner、registry 與 jobs 規則適用於 Python 本機版。`web/` 是使用者指定的獨立純靜態版本，不呼叫 Python API，也沒有伺服器任務或 manifest；瀏覽器版本的契約、限制與測試見 [WEB_VERSION.md](WEB_VERSION.md)。本機版既有執行路徑不變。
+
+靜態版資料流：瀏覽器 File → `model.mjs` 驗證／版面計算 → `render.mjs` Canvas（或 `pdf.mjs` PDF.js worker）→ PNG Blob → 使用者下載。`app.mjs` 管理選檔、排序、失效預覽、忙碌狀態及 Blob URL 釋放。`build.mjs` 僅複製自有模組與鎖定版本 PDF.js 資源；`preview.mjs` 僅供 loopback 靜態預覽，沒有處理 API。
+
+`web/fields.mjs` 提供工具欄位與預覽滑桿；`watermark-editor.mjs` 以 Pointer Events／pointer capture 管理移動、縮放、旋轉、手勢結束及鍵盤操作。浮水印幾何計算位於 `model.mjs`，`render.mjs` 與控制框使用同一份輸出座標，控制點不畫進 PNG。自訂位置為圖片比例，字級為來源像素；批次各圖分別換算位置。旋轉取指標相對文字中心的角度差，正值為順時針，並正規化至 -180～179 度；數字欄位與滑桿仍接受 180 度。三個圖示按鈕保留 accessible name 與鍵盤操作，手機控制點盡量分離。只有操作控制點才使用 `touch-action:none`，其餘畫面保留捲動。
+
+選檔及 drag/drop 共用 `loadFiles()`：驗證合併後的張數／大小、逐張解碼到暫存清單，整批成功才加入；失敗僅釋放新檔案，保留既有輸入及成果。PDF 選檔成功後替換前一份。載入／輸出期間拒絕新檔案與編輯；非同步預覽以版本核對，調整參數可保留畫面避免拖曳閃爍，但立即使舊成果失效。
+
+Cloudflare 以 `web/wrangler.jsonc` 指定 Pages 專案和 `dist` 產物，走 Direct Upload，不依賴 Git integration。Wrangler 只作為開發／部署依賴，沒有新增 Functions 或上傳使用者檔案的 API。`npm start` 先建置再開 5859 預覽，`cf:dev` 在 5860 本機模擬，`cf:deploy`／`cf:deploy:preview` 才會實際發布；流程見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。
+
 ```text
 使用者 / 自動化
   ├─ main.py ───────────── 啟動 Browser UI 並開啟瀏覽器

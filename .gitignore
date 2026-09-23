@@ -8,6 +8,8 @@ Desktop.ini
 __pycache__/
 *.py[cod]
 .venv/
+node_modules/
+.wrangler/
 venv/
 *.egg-info/
 build/
@@ -24,6 +26,7 @@ htmlcov/
 /data/outputs/*
 !/data/outputs/.gitkeep
 /output/
+.playwright-cli/
 
 # User media and generated artifacts
 *.avi
