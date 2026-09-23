@@ -1,6 +1,6 @@
 # 靜態版範例
 
-從專案根目錄執行：
+可直接開啟 [線上版](https://imgtools.jwander.net/)。需要預覽本機修改時，從專案根目錄執行：
 
 ```powershell
 cd web

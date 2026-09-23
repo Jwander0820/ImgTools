@@ -4,11 +4,11 @@
 
 ## 1. 架構總覽
 
-本文件原有 runner、registry 與 jobs 規則適用於 Python 本機版。`web/` 是使用者指定的獨立純靜態版本，不呼叫 Python API，也沒有伺服器任務或 manifest；瀏覽器版本的契約、限制與測試見 [WEB_VERSION.md](WEB_VERSION.md)。本機版既有執行路徑不變。
+專案包含 Python 本機版與獨立靜態網頁版。下方 runner、registry 與 jobs 規則適用於本機版；`web/` 不呼叫 Python API，也沒有伺服器任務或 manifest。線上入口為 [imgtools.jwander.net](https://imgtools.jwander.net/)，瀏覽器版本的契約、限制與測試見 [WEB_VERSION.md](WEB_VERSION.md)。
 
 靜態版資料流：瀏覽器 File → `model.mjs` 驗證／版面計算 → `render.mjs` Canvas（或 `pdf.mjs` PDF.js worker）→ PNG Blob → 使用者下載。`app.mjs` 管理選檔、排序、失效預覽、忙碌狀態及 Blob URL 釋放。`build.mjs` 僅複製自有模組與鎖定版本 PDF.js 資源；`preview.mjs` 僅供 loopback 靜態預覽，沒有處理 API。
 
-`imgtools/ui/static/shared/` 是兩版共用的視覺來源：`icons/` 保存使用者指定的五份 SVG，`theme.css` 定義品牌配色、字型及共用圖示尺寸。Python 直接提供 `/static/shared/`，靜態版建置則複製至 `web/dist/shared/`；建置需保留完整 repository，部署只使用 `dist`。兩版頁首與 favicon 共用 `c-image-controls.svg`，SVG 回應為 `image/svg+xml`，仍受既有靜態目錄邊界限制。外部 SVG 根元素的 `color` 必須與共用主色同步；來源與顯示規則見 [WEB_VERSION.md](WEB_VERSION.md)。
+`imgtools/ui/static/shared/` 是兩版共用的視覺來源：`icons/` 保存五份 SVG，`theme.css` 定義品牌配色、字型及共用圖示尺寸。Python 直接提供 `/static/shared/`，靜態版建置則複製至 `web/dist/shared/`；建置需保留完整 repository，部署只使用 `dist`。兩版頁首與 favicon 共用藍底白線的 `c-image-controls.svg`，其餘功能圖示使用品牌藍色。SVG 回應為 `image/svg+xml`，仍受既有靜態目錄邊界限制；來源與顯示規則見 [WEB_VERSION.md](WEB_VERSION.md)。
 
 本機 `state.mjs` 的 `iconForTool()` 依 action 選用共用圖示，供工具庫、常用工具及自訂常用清單使用；台詞、直向疊圖、兩種浮水印、兩種 PDF 轉圖 action 共用四款圖示，其餘 action 沿用類別圖示。兩版 CSS 以原有變數名稱引用 `theme.css`，本機 `layout.css` 負責完整工作台的桌面與窄視窗配置，保留 registry 表單、編輯器、任務佇列與結果互動。
 
@@ -60,6 +60,8 @@ Cloudflare 以 Pages Git integration 監看 GitHub `main`，推送後由 Cloudfl
 | `imgtools/ui/api.py` | HTTP payload 到 service 的薄 adapter | HTTP contract 改變時 |
 | `imgtools/ui/server.py` | loopback HTTP server 與靜態檔案 | 路由或 server 行為改變時 |
 | `imgtools/ui/static/` | registry-driven 表單與結果 UI | 視覺或互動改變時 |
+| `imgtools/ui/static/shared/` | 兩版共用圖示及配色原始檔 | 素材變更後檢查兩版並重建靜態產物 |
+| `web/` | 獨立瀏覽器工具、PDF.js 整合與靜態建置 | 靜態版功能或部署產物改變時 |
 | `tests/` | interface 與核心行為的回歸測試 | 每次行為變更時 |
 | `examples/` | payload 與偏好格式範例 | contract 改變時同步更新 |
 
@@ -68,6 +70,12 @@ Cloudflare 以 Pages Git integration 監看 GitHub `main`，推送後由 Cloudfl
 ### 3.1 一鍵 UI 入口
 
 從專案根目錄執行 `python main.py`，會呼叫 `imgtools.ui.server.serve("127.0.0.1", 5858, open_browser=True)`。若 5858 已遭占用，server 會直接回報錯誤，不會靜默改用其他埠。這個檔案只負責提供方便的啟動方式，不承載 UI 或工具邏輯。
+
+安裝步驟見 [README](../README.md)。Windows 的 `ImgTools.cmd` 優先使用專案 `.venv`，再回退到 `%LOCALAPPDATA%\Python\bin\python.exe`；`--check` 只顯示選用的解譯器。關閉啟動器視窗即停止服務。需要自訂埠或停用自動開啟瀏覽器時，使用 `python -m imgtools ui --port <port> --no-browser`；這不會自動將服務設為背景常駐。
+
+影片處理使用 `imageio-ffmpeg` 提供的 ffmpeg，可用 `IMGTOOLS_FFMPEG` 指定執行檔。測試或不同工作環境以 `IMGTOOLS_STATE_DIR` 隔離偏好與 manifest，勿修改使用者原始資料。
+
+既有共用 Python 環境只要具備相依套件，即可直接用其 `python.exe` 執行 `main.py` 或 CLI，不必另外建立專案 `.venv`。`ImgTools.cmd` 只按上述兩個路徑選擇解譯器，不會自動使用其他已啟用的虛擬環境。個人的背景啟動可在 Windows 工作排程器指定該環境的 `pythonw.exe`，引數為 `-m imgtools ui --host 127.0.0.1 --port 5858 --no-browser`，工作目錄設為專案根目錄；排程設定保留在個人電腦，無須修改原 CMD 或將個人環境路徑寫入專案。
 
 ### 3.2 CLI
 
@@ -79,6 +87,8 @@ Cloudflare 以 Pages Git integration 監看 GitHub `main`，推送後由 Cloudfl
 | `describe <action>` | 輸出指定 action metadata |
 | `run <action>` | 以 `--param key=value` 或 `--params-json` 呼叫 runner |
 | `ui` | 啟動本機 UI；預設固定使用 `127.0.0.1:5858`，可用 `--port` 明確改寫 |
+
+CLI 輸出為 JSON。`run` 可加 `--no-manifest` 停用該次執行紀錄；`examples/tasks/` 是 payload 範例，並非可直接交給 task-file 指令執行的檔案。
 
 ### 3.3 Python
 
@@ -141,6 +151,7 @@ UI 的非同步任務仍透過 `handle_run()` → `run_tool()` 執行，與 CLI/
 - `handler`：接受已整理參數 dict 的 core callable。
 - `danger_level`：目前 rename 為高風險，runner 會套用安全預設。
 - `featured`：沒有使用者偏好時的預設快速工具。
+- `ui_replacement`：將本機 UI 入口與偏好顯示整合至另一個 action，保留原 action 的 CLI／Python 契約與歷史任務。
 
 支援的參數型別為 `string`、`int`、`float`、`bool`、`path`、`folder`、`path_list`。路徑會移除 Windows 複製時包住整段路徑的雙引號；`path_list` 可透過 `min_items`、`max_items` 宣告數量限制，runner 與 UI 會共用這份 metadata。
 
@@ -212,15 +223,18 @@ data/.imgtools/
 | Preferences | `test_preferences.py` |
 | 單一處理工具 | 對應的 `test_<category>.py` |
 | 架構清潔度 | `test_architecture.py` |
+| 靜態版模型 / 幾何 / 限制 | `web-model.test.mjs`（`npm.cmd --prefix web test`） |
+| 共用素材 / 靜態產物 | `test_ui_server.py`、靜態建置及兩版瀏覽器檢查 |
 
-完整驗證：
+從專案根目錄執行完整驗證（先依 README 安裝 Python 與 web 依賴）：
 
 ```powershell
-python -m unittest discover -s tests
-python -m compileall imgtools tests
-python -m imgtools list
+& .\.venv\Scripts\python.exe -m unittest discover -s tests
+& .\.venv\Scripts\python.exe -m compileall -q imgtools tests
+& .\.venv\Scripts\python.exe -m imgtools list
 node --test tests/frontend.test.mjs
-rg -n -i "legacy|pdf_dpi_conversion_tools|merge_img_to_one_pdf" imgtools examples README.md requirements.txt
+npm.cmd --prefix web run cf:build
+git diff --check
 ```
 
-最後一條只允許在 Git 歷史或備份分支出現；目前工作樹的程式、測試與文件不應再引用舊實作。
+修改的 JS 模組另執行 `node --check`；UI 變更依 [AGENTS.md](../AGENTS.md) 完成 1280px／375px 瀏覽器操作與輸出檢查。只修改文件時核對內容、連結、路徑與 `git diff --check`，不必重跑影像測試。歷次數量與結果見 [UI_ITERATION.md](UI_ITERATION.md) 及 [WEB_VERSION.md](WEB_VERSION.md)，不視為固定規格。

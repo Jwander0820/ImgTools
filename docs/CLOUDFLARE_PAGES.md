@@ -1,5 +1,7 @@
 # Cloudflare Pages 與 GitHub 自動部署
 
+線上入口：[imgtools.jwander.net](https://imgtools.jwander.net/)。以下保存本專案的建置與發布設定，供後續維護或重新建立環境使用。
+
 使用 Cloudflare Pages 的 Git integration：GitHub 保存原始碼，Cloudflare 建置並提供網站。這不需要啟用 GitHub Pages。推送到正式分支後，GitHub 整合事件會觸發 Cloudflare 建置，不需要自己寫定時拉取腳本。
 
 使用者圖片、PDF、密碼與產生的 PNG 都在瀏覽器內處理。Cloudflare 只提供 HTML、CSS、JavaScript、圖示、PDF.js 與相關靜態資源，沒有 Python 後端、Functions 或圖片上傳服務。
@@ -49,7 +51,8 @@ imgtools/ui/static/shared/*
 ## 本機預覽與檢查
 
 ```powershell
-cd D:\Tools\ImgTools\web
+# 從專案根目錄執行
+cd web
 npm.cmd ci --ignore-scripts
 npm.cmd run cf:build
 npm.cmd run preview
@@ -84,14 +87,20 @@ npm.cmd run cf:deploy:preview
 
 GitHub Pages 則有每月 100 GB 的軟性頻寬限制，且限制用於線上業務、電子商務及主要提供商業 SaaS 的網站。免費開源工具不因流量增加就自動屬於商業用途；把原始碼放在 GitHub、由 Cloudflare 提供網站，並不是使用 GitHub Pages 主機。
 
-## 查核紀錄與尚未完成事項
+## 目前狀態與查核紀錄
 
-2026-09-23：靜態版、共用圖示與浮水印整合已推送至 GitHub（`a22fc89`）。GitHub 預設分支與本機追蹤分支已由 `master` 改為 `main`，提交紀錄不變；目前登入的 Cloudflare 帳號尚無 ImgTools Pages 專案。
+2026-09-23 文件更新：使用者已提供線上版本網址，實際請求首頁回應 HTTP 200，頁面標題為「ImgTools 影像工具」並含 `WEB` 標示。此次僅確認網站可連線，未登入 Cloudflare 查核帳號、專案、目前部署 commit 或真實 Git 自動建置紀錄。
+
+### 先前部署準備紀錄（2026-09-23）
+
+以下是網站上線前的查核結果，保留作為環境與測試紀錄；當時的待辦不代表目前仍未部署。
+
+當時靜態版、共用圖示與浮水印整合已推送至 GitHub（`a22fc89`）。GitHub 預設分支與本機追蹤分支已由 `master` 改為 `main`，提交紀錄不變；該輪登入的 Cloudflare 帳號尚無 ImgTools Pages 專案。
 
 同日產物為 214 個檔案、合計約 6.35 MiB，最大檔案約 2.13 MiB，符合上述單檔與檔案數限制。這是全部產物大小，不等同每次造訪的傳輸量；PDF 資源延遲載入，瀏覽器快取也會影響流量。
 
 本機以 Node 24.18.0 執行 `npm ci --ignore-scripts` 與 `npm run cf:build`，13 項模型測試及建置通過，`git diff --check` 通過；尚未驗證 Cloudflare Linux 建置環境及真實 Git 觸發。此輪只調整建置指令、版本設定及文件，影像程式與 UI 未變更，沿用前輪瀏覽器及 Python 回歸紀錄。
 
-網站程式已推送；尚需完成首次 GitHub 授權與 Pages 建立，並以真實推送確認部署 commit 和網站內容。未建立 Cloudflare 遠端專案、未部署。
+該輪已推送網站程式，但未建立 Cloudflare 遠端專案或部署；首次 GitHub 授權、Pages 建立及真實推送驗證是當時列出的後續工作。
 
 官方依據：[Git 整合](https://developers.cloudflare.com/pages/configuration/git-integration/)、[分支控制](https://developers.cloudflare.com/pages/configuration/branch-build-controls/)、[建置設定](https://developers.cloudflare.com/pages/configuration/build-configuration/)、[建置環境](https://developers.cloudflare.com/pages/configuration/build-image/)、[建置路徑](https://developers.cloudflare.com/pages/configuration/build-watch-paths/)、[Wrangler 設定](https://developers.cloudflare.com/pages/functions/wrangler-configuration/)、[Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)、[Pages 靜態請求計價](https://developers.cloudflare.com/pages/functions/pricing/)、[Pages 產品](https://www.cloudflare.com/products/pages/)、[Pages 限制](https://developers.cloudflare.com/pages/platform/limits/)、[GitHub Pages 限制](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)。
