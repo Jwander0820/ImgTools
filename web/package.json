@@ -9,7 +9,7 @@
     "test": "node --test ../tests/web-model.test.mjs",
     "cf:build": "npm run test && npm run build",
     "cf:dev": "npm run build && wrangler pages dev --ip 127.0.0.1 --port 5860",
-    "cf:deploy": "npm run cf:build && wrangler pages deploy --branch master",
+    "cf:deploy": "npm run cf:build && wrangler pages deploy --branch main",
     "cf:deploy:preview": "npm run cf:build && wrangler pages deploy --branch preview"
   },
   "dependencies": {

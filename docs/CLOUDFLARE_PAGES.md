@@ -14,7 +14,7 @@
 | --- | --- |
 | Repository | `Jwander0820/ImgTools` |
 | Project name | `imgtools-web`（若改名，同步修改 `web/wrangler.jsonc`） |
-| Production branch | `master` |
+| Production branch | `main` |
 | Framework preset | `None` |
 | Root directory | `web` |
 | Build command | `npm ci --ignore-scripts && npm run cf:build` |
@@ -29,10 +29,10 @@ GitHub 授權、儲存庫、正式分支及建置命令屬於 Cloudflare 專案�
 
 ## 分支與更新範圍
 
-在 Settings → Builds／Build → Branch control 啟用 `master` 的自動部署。正式分支取自目前 GitHub 儲存庫設定，不假設是 `main`。
+在 Settings → Builds／Build → Branch control 啟用 `main` 的自動部署。本專案預設分支已改名為 `main`；既有 Pages 專案也須同步更新 Production branch。
 
-- 推送 `master`：建置成功後更新正式網站。
-- 預覽分支：可使用 Custom branches，只包含 `preview`；推送該分支時取得預覽網址，合併至 `master` 才更新正式版。若暫時不用預覽，可選 None。
+- 推送 `main`：建置成功後更新正式網站。
+- 預覽分支：可使用 Custom branches，只包含 `preview`；推送該分支時取得預覽網址，合併至 `main` 才更新正式版。若暫時不用預覽，可選 None。
 - 本機修改或 commit：不會更新網站，必須完成 push。
 - 建置失敗：查看 Pages 建置日誌及對應 commit，修正後再次推送；不要只看 GitHub push 成功就認定網站已更新。
 
@@ -76,7 +76,7 @@ npm.cmd run cf:deploy
 npm.cmd run cf:deploy:preview
 ```
 
-兩者都會實際上傳。正式指令固定 `--branch master`，預覽為 `--branch preview`，應與 Pages 設定一致。手動部署可能發布尚未推送的本機內容，不能用來證明 Git 自動部署已接通。
+兩者都會實際上傳。正式指令固定 `--branch main`，預覽為 `--branch preview`，應與 Pages 設定一致。手動部署可能發布尚未推送的本機內容，不能用來證明 Git 自動部署已接通。
 
 ## 流量與限制
 
@@ -86,12 +86,12 @@ GitHub Pages 則有每月 100 GB 的軟性頻寬限制，且限制用於線上�
 
 ## 查核紀錄與尚未完成事項
 
-2026-09-23：GitHub 遠端預設分支確認為 `master`；目前登入的 Cloudflare 帳號尚無 ImgTools Pages 專案。查核當下 GitHub HEAD 仍為 `39ca634`，靜態版及圖示的本機 commits 尚未推送。
+2026-09-23：靜態版、共用圖示與浮水印整合已推送至 GitHub（`a22fc89`）。GitHub 預設分支與本機追蹤分支已由 `master` 改為 `main`，提交紀錄不變；目前登入的 Cloudflare 帳號尚無 ImgTools Pages 專案。
 
 同日產物為 214 個檔案、合計約 6.35 MiB，最大檔案約 2.13 MiB，符合上述單檔與檔案數限制。這是全部產物大小，不等同每次造訪的傳輸量；PDF 資源延遲載入，瀏覽器快取也會影響流量。
 
 本機以 Node 24.18.0 執行 `npm ci --ignore-scripts` 與 `npm run cf:build`，13 項模型測試及建置通過，`git diff --check` 通過；尚未驗證 Cloudflare Linux 建置環境及真實 Git 觸發。此輪只調整建置指令、版本設定及文件，影像程式與 UI 未變更，沿用前輪瀏覽器及 Python 回歸紀錄。
 
-本次僅準備程式與設定說明。尚需提交／推送、首次 GitHub 授權與 Pages 建立，以及以真實推送確認部署 commit 和網站內容。未建立遠端專案、未 push、未部署。
+網站程式已推送；尚需完成首次 GitHub 授權與 Pages 建立，並以真實推送確認部署 commit 和網站內容。未建立 Cloudflare 遠端專案、未部署。
 
 官方依據：[Git 整合](https://developers.cloudflare.com/pages/configuration/git-integration/)、[分支控制](https://developers.cloudflare.com/pages/configuration/branch-build-controls/)、[建置設定](https://developers.cloudflare.com/pages/configuration/build-configuration/)、[建置環境](https://developers.cloudflare.com/pages/configuration/build-image/)、[建置路徑](https://developers.cloudflare.com/pages/configuration/build-watch-paths/)、[Wrangler 設定](https://developers.cloudflare.com/pages/functions/wrangler-configuration/)、[Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)、[Pages 靜態請求計價](https://developers.cloudflare.com/pages/functions/pricing/)、[Pages 產品](https://www.cloudflare.com/products/pages/)、[Pages 限制](https://developers.cloudflare.com/pages/platform/limits/)、[GitHub Pages 限制](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)。

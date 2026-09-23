@@ -37,7 +37,7 @@ npm.cmd run preview
 
 網址為 `http://127.0.0.1:5859`，可用 `PORT` 環境變數調整預覽埠。Ctrl+C 停止預覽。Node.js 只用於安裝、複製產物和本機預覽，不是上線後的執行依賴。PDF.js 版本固定於 package-lock.json。
 
-亦可用 `npm.cmd start` 一次完成建置與預覽。部署方向改採 Cloudflare Pages Git integration，監看 GitHub `master`；`web/wrangler.jsonc` 指定產物，`web/.node-version` 指定建置版本。首次連結、Pages 欄位與發布流程見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。Wrangler 需要平台專用 optional dependencies，因此安裝時不要加 `--omit=optional`。
+亦可用 `npm.cmd start` 一次完成建置與預覽。部署方向改採 Cloudflare Pages Git integration，監看 GitHub `main`；`web/wrangler.jsonc` 指定產物，`web/.node-version` 指定建置版本。首次連結、Pages 欄位與發布流程見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。Wrangler 需要平台專用 optional dependencies，因此安裝時不要加 `--omit=optional`。
 
 部署時上傳 `web/dist/` 全部內容至 HTTPS 靜態主機；Cloudflare 建置命令為 `npm ci --ignore-scripts && npm run cf:build`（工作目錄 `web`，設定 `SKIP_DEPENDENCY_INSTALL=1`），輸出目錄 `dist`。使用相對資源路徑，可放在子目錄。主機須正確提供 `.mjs` 的 JavaScript MIME 與 `.wasm` 的 `application/wasm`。不要把專案根目錄、data、node_modules 或本機 API 公開。
 

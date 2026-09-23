@@ -20,7 +20,7 @@ npm.cmd start
 
 開啟 <http://127.0.0.1:5859>。部署目錄是 `web/dist/`，不要公開整個專案；PDF.js 與字型／解碼資源已包含在產物中，不依賴 CDN。只用 `file://` 雙擊 HTML 不能取代 HTTP 預覽。完整範圍、限制、驗證紀錄與本機背景啟動評估見 [docs/WEB_VERSION.md](docs/WEB_VERSION.md)。
 
-Cloudflare 使用 **Pages Git integration** 連接 GitHub：推送 `master` 後自動測試、建置並更新正式網站，GitHub 僅保存原始碼。Pages 設定 Root directory 為 `web`、輸出為 `dist`，建置命令為 `npm ci --ignore-scripts && npm run cf:build`，並設定 `SKIP_DEPENDENCY_INSTALL=1`。首次授權、分支與預覽設定見 [Cloudflare 自動部署](docs/CLOUDFLARE_PAGES.md)。`npm.cmd run cf:dev` 仍可在 5860 埠本機模擬；`cf:deploy` 是保留的手動發布指令。
+Cloudflare 使用 **Pages Git integration** 連接 GitHub：推送 `main` 後自動測試、建置並更新正式網站，GitHub 僅保存原始碼。Pages 設定 Root directory 為 `web`、輸出為 `dist`，建置命令為 `npm ci --ignore-scripts && npm run cf:build`，並設定 `SKIP_DEPENDENCY_INSTALL=1`。首次授權、分支與預覽設定見 [Cloudflare 自動部署](docs/CLOUDFLARE_PAGES.md)。`npm.cmd run cf:dev` 仍可在 5860 埠本機模擬；`cf:deploy` 是保留的手動發布指令。
 
 ## 功能
 

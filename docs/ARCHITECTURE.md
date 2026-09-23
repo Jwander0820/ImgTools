@@ -16,7 +16,7 @@
 
 選檔及 drag/drop 共用 `loadFiles()`：驗證合併後的張數／大小、逐張解碼到暫存清單，整批成功才加入；失敗僅釋放新檔案，保留既有輸入及成果。PDF 選檔成功後替換前一份。載入／輸出期間拒絕新檔案與編輯；非同步預覽以版本核對，調整參數可保留畫面避免拖曳閃爍，但立即使舊成果失效。
 
-Cloudflare 以 Pages Git integration 監看 GitHub `master`，推送後由 Cloudflare 執行 `npm ci --ignore-scripts && npm run cf:build`。建置工作目錄為 `web`，`cf:build` 先執行靜態版模型測試再產生 `dist`；`web/.node-version` 固定建置用 Node。GitHub 授權、分支、建置命令與 watch paths 設在 Pages，`web/wrangler.jsonc` 僅指定專案名、`dist` 與相容日期，不會自行連接 GitHub。Wrangler 只作為開發／手動部署依賴，沒有新增 Functions 或檔案上傳 API，也不需額外 GitHub Actions 部署。`npm start` 在 5859 預覽，`cf:dev` 在 5860 模擬；保留的 `cf:deploy`／`cf:deploy:preview` 會實際發布到 `master`／`preview`。完整流程見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。
+Cloudflare 以 Pages Git integration 監看 GitHub `main`，推送後由 Cloudflare 執行 `npm ci --ignore-scripts && npm run cf:build`。建置工作目錄為 `web`，`cf:build` 先執行靜態版模型測試再產生 `dist`；`web/.node-version` 固定建置用 Node。GitHub 授權、分支、建置命令與 watch paths 設在 Pages，`web/wrangler.jsonc` 僅指定專案名、`dist` 與相容日期，不會自行連接 GitHub。Wrangler 只作為開發／手動部署依賴，沒有新增 Functions 或檔案上傳 API，也不需額外 GitHub Actions 部署。`npm start` 在 5859 預覽，`cf:dev` 在 5860 模擬；保留的 `cf:deploy`／`cf:deploy:preview` 會實際發布到 `main`／`preview`。完整流程見 [CLOUDFLARE_PAGES.md](CLOUDFLARE_PAGES.md)。
 
 ```text
 使用者 / 自動化
